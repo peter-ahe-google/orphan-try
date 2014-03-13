@@ -1,0 +1,120 @@
+# Copyright (c) 2012, the Dart project authors.  Please see the AUTHORS file
+# for details. All rights reserved. Use of this source code is governed by a
+# BSD-style license that can be found in the LICENSE file.
+
+# This directory contains tests that are intended to show the
+# current state of the language.
+
+[ $compiler == none ]
+mixin_super_constructor_named_test: Fail # Issue 12631
+mixin_super_constructor_positionals_test: Fail # Issue 12631
+built_in_identifier_prefix_test: Fail # Issue 6970
+
+# These bugs refer currently ongoing language discussions.
+constructor_initializer_test/none: Fail # Issue 12633
+constructor5_test: Fail # Issue 6422
+constructor6_test: Fail # Issue 6422
+closure_in_initializer_test: Fail # Issue 6422
+
+# Regular bugs which should be fixed.
+duplicate_export_negative_test: Fail # Issue 6134
+mixin_forwarding_constructor2_test: Fail # Issue 13641
+
+# The vm does not support deferred loading.
+deferred_constraints_test/const: Fail
+deferred_constraints_test/const_annotation: Fail
+deferred_constraints_test/const_default_argument: Fail
+
+[ ($compiler == none || $compiler == dart2dart) && $unchecked ]
+# The vm and dart2dart does not support deferred loading.
+deferred_constraints_test/is_check: Fail
+deferred_constraints_test/as_operation: Fail
+deferred_constraints_test/catch_check: Fail
+deferred_constraints_test/type_annotation1: Fail
+
+[ ($compiler == none || $compiler == dart2dart)  && $checked ]
+# The vm and dart2dart does not support deferred loading.
+deferred_constraints_test/as_operation: Fail
+deferred_constraints_test/is_check: Fail
+deferred_constraints_test/catch_check: Fail
+deferred_constraints_test/type_annotation1: Fail
+deferred_constraints_test/type_annotation2: Fail
+deferred_constraints_test/as_operation: Fail
+deferred_constraints_test/type_annotation_generic1: Fail
+deferred_constraints_test/type_annotation_generic4: Fail
+
+[ $compiler == none || $compiler == dartanalyzer || $compiler == dart2analyzer ]
+# The vm and analyzer do not support deferred loading.
+deferred_no_prefix_test/01: Fail
+deferred_duplicate_prefix1_test/01: Fail
+deferred_duplicate_prefix2_test/01: Fail
+deferred_duplicate_prefix3_test/01: Fail
+
+[ $compiler == none && $runtime == vm ]
+class_keyword_test/02: MissingCompileTimeError # Issue 13627
+override_inheritance_mixed_test/08: MissingCompileTimeError # Issue 16137
+override_inheritance_mixed_test/09: MissingCompileTimeError # Issue 16137
+
+unicode_bom_test: Fail # Issue 16067
+
+[ $compiler == none && $checked ]
+type_variable_bounds4_test/01: Fail # Issue 14006
+
+[ $compiler == none && $unchecked ]
+# Only checked mode reports an error on type assignment
+# problems in compile time constants.
+compile_time_constant_checked_test/02: Fail, OK
+compile_time_constant_checked2_test/01: Fail, OK
+compile_time_constant_checked2_test/02: Fail, OK
+compile_time_constant_checked2_test/03: Fail, OK
+compile_time_constant_checked2_test/04: Fail, OK
+compile_time_constant_checked2_test/05: Fail, OK
+compile_time_constant_checked2_test/06: Fail, OK
+compile_time_constant_checked3_test/01: Fail, OK
+compile_time_constant_checked3_test/02: Fail, OK
+compile_time_constant_checked3_test/03: Fail, OK
+compile_time_constant_checked3_test/04: Fail, OK
+compile_time_constant_checked3_test/05: Fail, OK
+compile_time_constant_checked3_test/06: Fail, OK
+type_check_const_function_typedef2_test/00: Fail, OK
+malformed2_test/01: Fail, OK
+
+[ $runtime == vm || (($runtime == drt || $runtime == dartium) && $compiler == none) ]
+call_test: Fail # Issue 12602
+dynamic_prefix_core_test/01: Fail # Issue 12478
+
+[ $compiler == none && ($runtime == vm || $runtime == drt || $runtime == dartium) ]
+dynamic_prefix_core_test/none: Fail # Issue 12478
+export_ambiguous_main_negative_test: Fail # Issue 14763
+
+[ $compiler == none && $runtime == drt ]
+mixin_illegal_object_test/01: pass # Issue 10952.
+mixin_illegal_object_test/02: pass # Issue 10952.
+
+[ $compiler == dart2js && $runtime == ie9 ]
+lazy_static3_test: Fail # Issue 13469
+
+[ $compiler == none && $runtime == dartium && $unchecked ]
+named_parameters_type_test/01: Fail # Issue 13719: Please triage this failure.
+named_parameters_type_test/02: Fail # Issue 13719: Please triage this failure.
+named_parameters_type_test/03: Fail # Issue 13719: Please triage this failure.
+positional_parameters_type_test/01: Fail # Issue 13719: Please triage this failure.
+positional_parameters_type_test/02: Fail # Issue 13719: Please triage this failure.
+assertion_test: Fail # Issue 13719: Please triage this failure.
+generic_test: Fail # Issue 13719: Please triage this failure.
+list_literal1_test/01: Fail # Issue 13719: Please triage this failure.
+list_literal4_test: Fail # Issue 13719: Please triage this failure.
+map_literal1_test/01: Fail # Issue 13719: Please triage this failure.
+map_literal4_test: Fail # Issue 13719: Please triage this failure.
+type_checks_in_factory_method_test: Fail # Issue 13719: Please triage this failure.
+vm/type_vm_test: Fail # Issue 13719: Please triage this failure.
+
+[ $compiler == none && $runtime == dartium ]
+first_class_types_literals_test: Pass, Fail # Issue 13719: Please triage this failure.
+issue13474_test: Pass, Fail # Issue 14651.
+
+[ $compiler == none && ( $runtime == dartium || $runtime == drt ) ]
+typed_message_test: Crash, Fail # Issue 13921, 14400
+vm/optimized_guarded_field_isolates_test: Fail # Issue 13921.
+override_inheritance_mixed_test/08: Fail # Issue 16137
+override_inheritance_mixed_test/09: Fail # Issue 16137

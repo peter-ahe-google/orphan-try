@@ -1,0 +1,6 @@
+params server, passwd, port
+
+Connect (serverID: server, portNum: port, password: passwd, visible: "No")
+util.startDartEditor
+RunWithNewResults "do it"
+util.stopDartEditor

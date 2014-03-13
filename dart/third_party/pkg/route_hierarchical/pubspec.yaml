@@ -1,0 +1,12 @@
+name:  route_hierarchical
+description:  A client + server routing library for Dart
+version: 0.4.12
+authors:
+- Justin Fagnani <justinfagnani@google.com>
+- Pavel Jbanov <pavelj@google.com>
+homepage: https://github.com/dart-lang/route/tree/experimental_hierarchical
+
+dependencies:
+  browser: any
+  logging: any
+  unittest: any

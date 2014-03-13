@@ -1,0 +1,17 @@
+Click "search icon"
+util.typeSlowly "sunflower"
+util.xWait 0.5
+TypeText downArrow
+util.newline
+util.xWaitFor 5, (Text:"(4 matches)",CaseSensitive:"yes",ValidCharacters:"(4matches)",dpi:94)
+util.searchBox
+util.xWait 0.4
+util.typeSlowly "str"
+Click "Stream async"
+util.xWait 1
+util.xWaitFor 3, "stream tab"
+util.closeAllTabs
+util.openWelcomePage
+DoubleClick "dart sdk"
+TypeText downArrow
+util.deleteOutput (* delete search *)
