@@ -12,6 +12,10 @@ import 'dart:async' show
 import 'dart:convert' show
     JSON;
 
+import 'dart:math' show
+    max,
+    min;
+
 import '../../../sdk/lib/_internal/compiler/implementation/scanner/scannerlib.dart'
   show
     EOF_TOKEN,
@@ -210,10 +214,12 @@ void removeCodeCompletion() {
     activeCompletion.classes.remove('active');
     activeCompletion = null;
   }
+  inputPre.querySelectorAll('.hazed-suggestion').forEach((e) => e.remove());
 }
 
 
 var activeCompletion;
+num minSuggestionWidth = 0;
 
 void displayCodeCompletion() {
   if (activeCompletion != null) {
@@ -235,6 +241,7 @@ void displayCodeCompletion() {
   if (ui == null) return;
 
   String prefix = text.data.substring(0, anchorOffset).trim();
+  print(prefix);
   if (prefix.isEmpty) {
     // Discard mutations.
     observer.takeRecords();
@@ -244,6 +251,15 @@ void displayCodeCompletion() {
   activeCompletion = parent;
   //observer.disconnect();
   ui.nodes.clear();
+
+  SpanElement inline = new SpanElement()
+      ..style.minWidth = '${minSuggestionWidth}px'
+      ..classes.add('hazed-suggestion');
+  if (minSuggestionWidth == 0) {
+    inline.style.display = 'none';
+  }
+  Text rest = text.splitText(anchorOffset);
+  text.parentNode.insertAllBefore([inline, rest], text.nextNode);
 
   DivElement staticResults = new DivElement()
       ..classes.addAll(['dart-static', 'dart-limited-height']);
@@ -271,7 +287,21 @@ void displayCodeCompletion() {
     var serverWatch = new Stopwatch()..start();
     HttpRequest.getString(mindQuery).then((String responseText) {
       serverWatch.stop();
-      JSON.decode(responseText).forEach((String completion) {
+      List<String> serverSuggestions = JSON.decode(responseText);
+      if (!serverSuggestions.isEmpty) {
+        String suggestion = serverSuggestions.first.substring(prefix.length);
+        if (!suggestion.isEmpty) {
+          inline
+              ..appendText(suggestion)
+              ..style.display = ''
+              ..style.minWidth = '${minSuggestionWidth}px';
+          minSuggestionWidth =
+              max(minSuggestionWidth, inline.getBoundingClientRect().width);
+          print('minSuggestionWidth: $minSuggestionWidth');
+        }
+      }
+      for (int i = 1; i < serverSuggestions.length; i++) {
+        String completion = serverSuggestions[i];
         DivElement where = staticResults;
         int index = results.indexOf(completion);
         if (index != -1) {
@@ -285,7 +315,7 @@ void displayCodeCompletion() {
           }
           where.nodes.add(buildCompletionEntry(completion));
         }
-      });
+      }
       serverResults.appendHtml('<div>${serverWatch.elapsedMilliseconds}ms</div>');
       // Discard mutations.
       observer.takeRecords();
@@ -321,6 +351,9 @@ onMutation(List<MutationRecord> mutations, MutationObserver observer) {
     element.remove();
   }
   for (Element element in inputPre.queryAll('.dart-code-completion')) {
+    element.remove();
+  }
+  for (Element element in inputPre.queryAll('.hazed-suggestion')) {
     element.remove();
   }
 
