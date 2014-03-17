@@ -126,6 +126,6 @@ class CodeCompletionDecoration extends Decoration {
         ..appendText('Completion goes here');
     return super.applyTo(text)
         ..classes.add('dart-code-completion-holder')
-        ..nodes.insert(0, codeCompletion);
+        ..nodes.add(codeCompletion);
   }
 }

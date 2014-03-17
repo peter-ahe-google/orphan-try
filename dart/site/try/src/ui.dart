@@ -13,10 +13,7 @@ import 'cache.dart' show
     onLoad,
     updateCacheStatus;
 
-import 'editor.dart' show
-    onInput,
-    onKeyUp,
-    onMutation;
+import 'interaction_manager.dart' show InteractionManager;
 
 import 'run.dart' show
     makeOutputFrame;
@@ -31,6 +28,10 @@ import 'samples.dart' show
     EXAMPLE_HELLO,
     EXAMPLE_HELLO_HTML,
     EXAMPLE_SUNFLOWER;
+
+// TODO(ahe): Make internal to buildUI once all interactions have been moved to
+// the manager.
+InteractionManager interaction;
 
 DivElement inputPre;
 PreElement outputDiv;
@@ -87,6 +88,8 @@ void onInspirationChange(Event event) {
 }
 
 buildUI() {
+  interaction = new InteractionManager();
+
   window.localStorage['currentSample'] = '$currentSample';
 
   var inspirationTabs = document.getElementById('inspiration');
@@ -186,8 +189,10 @@ buildUI() {
 
   inputPre
       ..contentEditable = 'true'
-      ..onKeyDown.listen(onKeyUp)
-      ..onInput.listen(onInput);
+      ..onKeyDown.listen(interaction.onKeyUp)
+      ..onInput.listen(interaction.onInput);
+
+  document.onSelectionChange.listen(interaction.onSelectionChange);
 
   var inputWrapper = new DivElement()
       ..append(inputPre)
@@ -281,7 +286,7 @@ buildUI() {
     outputDiv.appendText('${event.data}\n');
   });
 
-  observer = new MutationObserver(onMutation)
+  observer = new MutationObserver(interaction.onMutation)
       ..observe(inputPre, childList: true, characterData: true, subtree: true);
 
   scheduleMicrotask(() {
@@ -328,7 +333,7 @@ void openSettings(MouseEvent event) {
     backdrop.style.opacity = '0.0';
 
     applyingSettings = true;
-    onMutation([], observer);
+    interaction.onMutation([], observer);
     applyingSettings = false;
   }
 

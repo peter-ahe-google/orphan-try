@@ -50,64 +50,6 @@ const String INDENT = '\u{a0}\u{a0}';
 
 Set<String> seenIdentifiers;
 
-bool requestCodeCompletion = false;
-
-onInput(Event e) {
-  if (applyingSettings) return;
-  if (codeCompletionTimer != null) {
-    codeCompletionTimer.cancel();
-    codeCompletionTimer = null;
-  }
-  requestCodeCompletion = true;
-  // displayCodeCompletion();
-}
-
-onKeyUp(KeyboardEvent e) {
-  switch (e.keyCode) {
-    case KeyCode.DOWN:
-      if (activeCompletion != null) {
-        e.preventDefault();
-        moveActive(1);
-        return;
-      }
-      break;
-
-    case KeyCode.UP:
-      if (activeCompletion != null) {
-        e.preventDefault();
-        moveActive(-1);
-        return;
-      }
-      break;
-
-    case KeyCode.ESC:
-      e.preventDefault();
-      removeCodeCompletion();
-      return;
-
-    case KeyCode.ENTER: {
-      e.preventDefault();
-      Selection selection = window.getSelection();
-      if (selection.isCollapsed && selection.anchorNode is Text) {
-        Text text = selection.anchorNode;
-        int offset = selection.anchorOffset;
-        text.insertData(offset, '\n');
-        selection.collapse(text, offset + 1);
-      }
-      break;
-    }
-  }
-
-  scheduleRemoveCodeCompletion();
-
-  // This is a hack to get Safari (iOS) to send mutation events on
-  // contenteditable.
-  // TODO(ahe): Move to onInput?
-  var newDiv = new DivElement();
-  hackDiv.replaceWith(newDiv);
-  hackDiv = newDiv;
-}
-
 moveActive(int distance) {
   List<Element> entries = document.querySelectorAll('.dart-static>.dart-entry');
   int activeIndex = -1;
@@ -197,18 +139,6 @@ String computeVisibility(Element node, [Element parent]) {
   return hidden;
 }
 
-Timer codeCompletionTimer;
-
-void scheduleRemoveCodeCompletion() {
-  if (applyingSettings) return;
-  if (codeCompletionTimer != null) {
-    codeCompletionTimer.cancel();
-    codeCompletionTimer = null;
-  }
-  codeCompletionTimer =
-      new Timer(const Duration(milliseconds: 1), removeCodeCompletion);
-}
-
 void removeCodeCompletion() {
   if (activeCompletion != null) {
     activeCompletion.classes.remove('active');
@@ -221,21 +151,32 @@ void removeCodeCompletion() {
 var activeCompletion;
 num minSuggestionWidth = 0;
 
+/// Returns the [Element] which encloses the current collapsed selection, if it
+/// exists.
+Element getElementAtSelection() {
+  Selection selection = window.getSelection();
+  if (!selection.isCollapsed) return null;
+  var anchorNode = selection.anchorNode;
+  if (!inputPre.contains(anchorNode)) return null;
+  int type = anchorNode.nodeType;
+  if (type != Node.TEXT_NODE) return null;
+  Text text = anchorNode;
+  var parent = text.parent;
+  if (parent is! Element) return null;
+  return parent;
+}
+
 void displayCodeCompletion() {
+  throw 'broken';
   if (activeCompletion != null) {
     activeCompletion.classes.remove('active');
     activeCompletion = null;
   }
+  Element parent = getElementAtSelection();
+  if (parent == null) return;
   Selection selection = window.getSelection();
-  if (!selection.isCollapsed) return;
-  var anchorNode = selection.anchorNode;
-  if (!inputPre.contains(anchorNode)) return;
+  Text text = selection.anchorNode;
   int anchorOffset = selection.anchorOffset;
-  int type = anchorNode.nodeType;
-  if (type != Node.TEXT_NODE) return;
-  Text text = anchorNode;
-  var parent = text.parent;
-  if (parent is! Element) return;
   parent.classes.add('active');
   var ui = parent.query('.dart-code-completion');
   if (ui == null) return;
@@ -333,195 +274,8 @@ void displayCodeCompletion() {
   //observer.observe(inputPre, childList: true, characterData: true, subtree: true);
 }
 
-Element buildCompletionEntry(String completion) {
-  return new DivElement()
-      ..classes.add('dart-entry')
-      ..appendText(completion);
-}
-
-
 bool isMalformedInput = false;
 String currentSource = "";
-
-// TODO(ahe): This method should be cleaned up. It is too large.
-onMutation(List<MutationRecord> mutations, MutationObserver observer) {
-  // scheduleCompilation();
-
-  for (Element element in inputPre.queryAll('a.diagnostic>span')) {
-    element.remove();
-  }
-  for (Element element in inputPre.queryAll('.dart-code-completion')) {
-    element.remove();
-  }
-  for (Element element in inputPre.queryAll('.hazed-suggestion')) {
-    element.remove();
-  }
-
-  // Discard clean-up mutations.
-  observer.takeRecords();
-
-  Selection selection = window.getSelection();
-
-  while (!mutations.isEmpty) {
-    for (MutationRecord record in mutations) {
-      String type = record.type;
-      switch (type) {
-
-        case 'characterData':
-
-          bool hasSelection = false;
-          int offset = selection.anchorOffset;
-          if (selection.isCollapsed && selection.anchorNode == record.target) {
-            hasSelection = true;
-          }
-          var parent = record.target.parentNode;
-          if (parent != inputPre) {
-            inlineChildren(parent);
-          }
-          if (hasSelection) {
-            selection.collapse(record.target, offset);
-          }
-          break;
-
-        default:
-          if (!record.addedNodes.isEmpty) {
-            for (var node in record.addedNodes) {
-
-              if (node.nodeType != Node.ELEMENT_NODE) continue;
-
-              if (node is BRElement) {
-                if (selection.anchorNode != node) {
-                  node.replaceWith(new Text('\n'));
-                }
-              } else {
-                var parent = node.parentNode;
-                if (parent == null) continue;
-                var nodes = new List.from(node.nodes);
-                var style = node.getComputedStyle();
-                if (style.display != 'inline') {
-                  var previous = node.previousNode;
-                  if (previous is Text) {
-                    previous.appendData('\n');
-                  } else {
-                    parent.insertBefore(new Text('\n'), node);
-                  }
-                }
-                for (Node child in nodes) {
-                  child.remove();
-                  parent.insertBefore(child, node);
-                }
-                node.remove();
-              }
-            }
-          }
-      }
-    }
-    mutations = observer.takeRecords();
-  }
-
-  if (!inputPre.nodes.isEmpty && inputPre.nodes.last is Text) {
-    Text text = inputPre.nodes.last;
-    if (!text.text.endsWith('\n')) {
-      text.appendData('\n');
-    }
-  }
-
-  int offset = 0;
-  int anchorOffset = 0;
-  bool hasSelection = false;
-  Node anchorNode = selection.anchorNode;
-  // TODO(ahe): Try to share walk4 methods.
-  void walk4(Node node) {
-    // TODO(ahe): Use TreeWalker when that is exposed.
-    // function textNodesUnder(root){
-    //   var n, a=[], walk=document.createTreeWalker(
-    //       root,NodeFilter.SHOW_TEXT,null,false);
-    //   while(n=walk.nextNode()) a.push(n);
-    //   return a;
-    // }
-    int type = node.nodeType;
-    if (type == Node.TEXT_NODE || type == Node.CDATA_SECTION_NODE) {
-      CharacterData text = node;
-      if (anchorNode == node) {
-        hasSelection = true;
-        anchorOffset = selection.anchorOffset + offset;
-        return;
-      }
-      offset += text.length;
-    }
-
-    var child = node.firstChild;
-    while (child != null) {
-      walk4(child);
-      if (hasSelection) return;
-      child = child.nextNode;
-    }
-  }
-  if (selection.isCollapsed) {
-    walk4(inputPre);
-  }
-
-  currentSource = inputPre.text;
-  inputPre.nodes.clear();
-  inputPre.appendText(currentSource);
-  if (hasSelection) {
-    selection.collapse(inputPre.firstChild, anchorOffset);
-  }
-
-  isMalformedInput = false;
-  for (var n in new List.from(inputPre.nodes)) {
-    if (n is! Text) continue;
-    Text node = n;
-    String text = node.text;
-
-    Token token = new StringScanner(
-        new StringSourceFile('', text), includeComments: true).tokenize();
-    int offset = 0;
-    seenIdentifiers = new Set<String>.from(mock.identifiers);
-    for (;token.kind != EOF_TOKEN; token = token.next) {
-      Decoration decoration = getDecoration(token);
-      if (decoration == null) continue;
-      bool hasSelection = false;
-      int selectionOffset = selection.anchorOffset;
-
-      if (selection.isCollapsed && selection.anchorNode == node) {
-        hasSelection = true;
-        selectionOffset = selection.anchorOffset;
-      }
-      int splitPoint = token.charOffset - offset;
-      Text str = node.splitText(splitPoint);
-      Text after = str.splitText(token.charCount);
-      offset += splitPoint + token.charCount;
-      inputPre.insertBefore(after, node.nextNode);
-      inputPre.insertBefore(decoration.applyTo(str), after);
-
-      if (hasSelection && selectionOffset > node.length) {
-        selectionOffset -= node.length;
-        if (selectionOffset > str.length) {
-          selectionOffset -= str.length;
-          selection.collapse(after, selectionOffset);
-        } else {
-          selection.collapse(str, selectionOffset);
-        }
-      }
-      node = after;
-    }
-  }
-
-  window.localStorage['currentSource'] = currentSource;
-
-  if (requestCodeCompletion || activeCompletion != null) {
-    requestCodeCompletion = false;
-    if (codeCompletionTimer != null) {
-      codeCompletionTimer.cancel();
-      codeCompletionTimer = null;
-    }
-    displayCodeCompletion();
-  }
-
-  // Discard highlighting mutations.
-  observer.takeRecords();
-}
 
 addDiagnostic(String kind, String message, int begin, int end) {
   observer.disconnect();

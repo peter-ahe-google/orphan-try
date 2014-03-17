@@ -18,9 +18,6 @@ import 'compilation.dart' show
     compilerIsolate,
     compilerPort;
 
-import 'editor.dart' show
-    onMutation;
-
 import 'isolate_legacy.dart' show
     spawnDomFunction,
     spawnFunction;
@@ -30,6 +27,7 @@ import 'samples.dart' show
 
 import 'ui.dart' show
     buildUI,
+    interaction,
     observer;
 
 int count = 0;
@@ -75,7 +73,7 @@ main() {
         case 2:
           // Acknowledged Receiving the SDK URI.
           compilerPort = sendPort;
-          onMutation([], observer);
+          interaction.onMutation([], observer);
           break;
         default:
           // TODO(ahe): Close [port]?
