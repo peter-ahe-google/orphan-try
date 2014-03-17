@@ -375,14 +375,10 @@ class CodeCompletionState extends InitialState {
   void onKeyUp(KeyboardEvent event) {
     switch (event.keyCode) {
       case KeyCode.DOWN:
-        event.preventDefault();
-        editor.moveActive(1);
-        return;
+        return moveDown(event);
 
       case KeyCode.UP:
-        event.preventDefault();
-        editor.moveActive(-1);
-        return;
+        return moveUp(event);
 
       case KeyCode.ESC:
         event.preventDefault();
@@ -394,6 +390,25 @@ class CodeCompletionState extends InitialState {
         event.preventDefault();
         return endCompletion(acceptSuggestion: true);
     }
+  }
+
+  void moveDown(Event event) {
+    event.preventDefault();
+    move(1);
+  }
+
+  void moveUp(Event event) {
+    event.preventDefault();
+    move(-1);
+  }
+
+  void move(int direction) {
+    Element element = editor.moveActive(direction);
+    if (element == null) return;
+    var text = activeCompletion.firstChild;
+    String prefix = "";
+    if (text is Text) prefix = text.data.trim();
+    updateInlineSuggestion(prefix, element.text);
   }
 
   void endCompletion({bool acceptSuggestion: false}) {

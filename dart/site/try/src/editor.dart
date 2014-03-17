@@ -50,7 +50,7 @@ const String INDENT = '\u{a0}\u{a0}';
 
 Set<String> seenIdentifiers;
 
-moveActive(int distance) {
+Element moveActive(int distance) {
   List<Element> entries = document.querySelectorAll('.dart-static>.dart-entry');
   int activeIndex = -1;
   for (var i = 0; i < entries.length; i++) {
@@ -64,7 +64,7 @@ moveActive(int distance) {
   if (0 <= newIndex && newIndex < entries.length) {
     currentEntry = entries[newIndex];
   }
-  if (currentEntry == null) return;
+  if (currentEntry == null) return null;
   if (0 <= newIndex && activeIndex != -1) {
     entries[activeIndex].classes.remove('activeEntry');
   }
@@ -121,6 +121,7 @@ moveActive(int distance) {
   }
   // Discard mutations.
   observer.takeRecords();
+  return currentEntry;
 }
 
 const visible = 'visible';
