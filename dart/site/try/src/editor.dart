@@ -159,11 +159,13 @@ Element getElementAtSelection() {
   if (!selection.isCollapsed) return null;
   var anchorNode = selection.anchorNode;
   if (!inputPre.contains(anchorNode)) return null;
+  if (inputPre == anchorNode) return null;
   int type = anchorNode.nodeType;
   if (type != Node.TEXT_NODE) return null;
   Text text = anchorNode;
   var parent = text.parent;
   if (parent is! Element) return null;
+  if (inputPre == parent) return null;
   return parent;
 }
 
