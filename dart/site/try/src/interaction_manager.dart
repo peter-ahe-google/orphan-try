@@ -31,6 +31,7 @@ import 'compilation.dart' show
 import 'ui.dart' show
     applyingSettings,
     currentTheme,
+    enableDartMind,
     hackDiv,
     inputPre,
     observer,
@@ -282,8 +283,7 @@ class InitialState extends InteractionState {
       Text node = n;
       String text = node.text;
 
-      Token token = new StringScanner(
-          new StringSourceFile('', text), includeComments: true).tokenize();
+      Token token = tokenize(text);
       int offset = 0;
       editor.seenIdentifiers = new Set<String>.from(mock.identifiers);
       for (;token.kind != EOF_TOKEN; token = token.next) {
@@ -317,6 +317,7 @@ class InitialState extends InteractionState {
     }
 
     window.localStorage['currentSource'] = editor.currentSource;
+    print('Saved source');
 
     // Discard highlighting mutations.
     observer.takeRecords();
@@ -415,7 +416,11 @@ class CodeCompletionState extends InitialState {
     if (acceptSuggestion) {
       suggestionAccepted();
     }
-    editor.removeCodeCompletion();
+    activeCompletion.classes.remove('active');
+    inputPre.querySelectorAll('.hazed-suggestion').forEach((e) => e.remove());
+    // The above changes create mutation records. This implicitly fire mutation
+    // events that result in saving the source code in local storage.
+    // TODO(ahe): Consider making this more explicit.
     state = new InitialState(context);
   }
 
@@ -508,6 +513,16 @@ class CodeCompletionState extends InitialState {
       return endCompletion();
     }
 
+    Token first = tokenize(prefix);
+    for (Token token = first; token.kind != EOF_TOKEN; token = token.next) {
+      String tokenInfo = token.info.value;
+      if (token != first ||
+          tokenInfo != 'identifier' &&
+          tokenInfo != 'keyword') {
+        return endCompletion();
+      }
+    }
+
     var borderHeight = 2; // 1 pixel border top & bottom.
     num height = ui.getBoundingClientRect().height - borderHeight;
     ui.style.minHeight = '${height}px';
@@ -534,51 +549,50 @@ class CodeCompletionState extends InitialState {
       staticResults.nodes.add(buildCompletionEntry(completion));
     });
 
-    String encodedArg0 = Uri.encodeComponent('"$prefix"');
-    String mindQuery =
-        'http://dart-mind.appspot.com/rpc'
-        '?action=GetExportingPubCompletions'
-        '&arg0=$encodedArg0';
-    try {
-      var serverWatch = new Stopwatch()..start();
-      HttpRequest.getString(mindQuery).then((String responseText) {
-        serverWatch.stop();
-        List<String> serverSuggestions = JSON.decode(responseText);
-        if (!serverSuggestions.isEmpty) {
-          updateInlineSuggestion(prefix, serverSuggestions.first);
-        }
-        for (int i = 1; i < serverSuggestions.length; i++) {
-          String completion = serverSuggestions[i];
-          DivElement where = staticResults;
-          int index = results.indexOf(completion);
-          if (index != -1) {
-            List<Element> entries =
-                document.querySelectorAll('.dart-static>.dart-entry');
-            entries[index].classes.add('doubleplusgood');
-          } else {
-            if (results.length > 3) {
-              serverResults.style.display = 'block';
-              where = serverResults;
-            }
-            where.nodes.add(buildCompletionEntry(completion));
+    if (enableDartMind) {
+      String encodedArg0 = Uri.encodeComponent('"$prefix"');
+      String mindQuery =
+          'http://dart-mind.appspot.com/rpc'
+          '?action=GetExportingPubCompletions'
+          '&arg0=$encodedArg0';
+      try {
+        var serverWatch = new Stopwatch()..start();
+        HttpRequest.getString(mindQuery).then((String responseText) {
+          serverWatch.stop();
+          List<String> serverSuggestions = JSON.decode(responseText);
+          if (!serverSuggestions.isEmpty) {
+            updateInlineSuggestion(prefix, serverSuggestions.first);
           }
-        }
-        serverResults.appendHtml('<div>${serverWatch.elapsedMilliseconds}ms</div>');
-        // Discard mutations.
-        observer.takeRecords();
-      }).catchError((error, stack) {
+          for (int i = 1; i < serverSuggestions.length; i++) {
+            String completion = serverSuggestions[i];
+            DivElement where = staticResults;
+            int index = results.indexOf(completion);
+            if (index != -1) {
+              List<Element> entries =
+                  document.querySelectorAll('.dart-static>.dart-entry');
+              entries[index].classes.add('doubleplusgood');
+            } else {
+              if (results.length > 3) {
+                serverResults.style.display = 'block';
+                where = serverResults;
+              }
+              where.nodes.add(buildCompletionEntry(completion));
+            }
+          }
+          serverResults.appendHtml('<div>${serverWatch.elapsedMilliseconds}ms</div>');
+          // Discard mutations.
+          observer.takeRecords();
+        }).catchError((error, stack) {
+          window.console.dir(error);
+          window.console.error('$stack');
+        });
+      } catch (error, stack) {
         window.console.dir(error);
         window.console.error('$stack');
-      });
-    } catch (error, stack) {
-      window.console.dir(error);
-      window.console.error('$stack');
+      }
     }
     // Discard mutations.
     observer.takeRecords();
-
-
-
   }
 
   Element buildCompletionEntry(String completion) {
@@ -586,4 +600,9 @@ class CodeCompletionState extends InitialState {
         ..classes.add('dart-entry')
         ..appendText(completion);
   }
+}
+
+Token tokenize(String text) {
+  var file = new StringSourceFile('', text);
+  return new StringScanner(file, includeComments: true).tokenize();
 }

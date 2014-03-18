@@ -140,15 +140,6 @@ String computeVisibility(Element node, [Element parent]) {
   return hidden;
 }
 
-void removeCodeCompletion() {
-  if (activeCompletion != null) {
-    activeCompletion.classes.remove('active');
-    activeCompletion = null;
-  }
-  inputPre.querySelectorAll('.hazed-suggestion').forEach((e) => e.remove());
-}
-
-
 var activeCompletion;
 num minSuggestionWidth = 0;
 

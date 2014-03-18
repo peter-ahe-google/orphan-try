@@ -43,6 +43,7 @@ bool alwaysRunInWorker = window.localStorage['alwaysRunInWorker'] == 'true';
 bool verboseCompiler = window.localStorage['verboseCompiler'] == 'true';
 bool minified = window.localStorage['minified'] == 'true';
 bool onlyAnalyze = window.localStorage['onlyAnalyze'] == 'true';
+bool enableDartMind = window.localStorage['enableDartMind'] == 'true';
 final String rawCodeFont = window.localStorage['codeFont'];
 String codeFont = rawCodeFont == null ? '' : rawCodeFont;
 String currentSample = window.localStorage['currentSample'];
@@ -381,6 +382,11 @@ void openSettings(MouseEvent event) {
           'Only analyze program.', onlyAnalyze,
           (Event e) { onlyAnalyze = isChecked(e.target); }));
 
+  fieldSet.append(
+      buildCheckBox(
+          'Talk to "Dart Mind" server.', enableDartMind,
+          (Event e) { enableDartMind = isChecked(e.target); }));
+
   fieldSet.append(new LabelElement()..appendText('Code font:'));
   var textInput = new TextInputElement();
   textInput.classes.add('input-block-level');
@@ -414,6 +420,7 @@ void openSettings(MouseEvent event) {
     window.localStorage['verboseCompiler'] = '$verboseCompiler';
     window.localStorage['minified'] = '$minified';
     window.localStorage['onlyAnalyze'] = '$onlyAnalyze';
+    window.localStorage['enableDartMind'] = '$enableDartMind';
     window.localStorage['codeFont'] = '$codeFont';
 
     dialog.style.display = 'none';
