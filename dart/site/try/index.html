@@ -130,6 +130,25 @@ a:hover.diagnostic span {
 .hazed-suggestion:after {
   content: " ";
 }
+
+.slider {
+  overflow-y: hidden;
+  height: 0;
+  max-height: 9999px;
+
+  transition-property: height;
+  transition-duration: .5s;
+  transition-timing-function: cubic-bezier(0.4, 0.0, 0.2, 1);
+/* cubic-bezier(0, 1, 0.5, 1);*/
+}
+
+.myhidden {
+  position: absolute;
+  visibility: hidden;
+  height: auto;
+}
+
+
 </style>
 
 <meta itemprop="name" content="Try Dart!">
@@ -199,6 +218,22 @@ a:hover.diagnostic span {
 </div>
 </div>
 </div>
+
+<div id="settings-dialog" class="myhidden container-fluid">
+  <div class="row-fluid">
+    <div class="span12">
+      <div>
+        <h3>Settings</h3>
+        <div id="settings-body">
+        </div>
+        <div>
+          <a href="#" class="btn btn-primary" id="settings-done">Done</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="container-fluid">
 <article class="homepage">
 <section>
@@ -212,17 +247,6 @@ a:hover.diagnostic span {
 </div>
 </section>
 </article>
-</div>
-
-<div id="settings-dialog" class="modal hide fade">
-  <div class="modal-header">
-    <h3>Settings</h3>
-  </div>
-  <div class="modal-body" id="settings-body">
-  </div>
-  <div class="modal-footer">
-    <a href="#" class="btn btn-primary" id="settings-done">Done</a>
-  </div>
 </div>
 
 <footer>

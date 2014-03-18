@@ -6,30 +6,13 @@ library trydart.editor;
 
 import 'dart:html';
 
-import 'dart:async' show
-    Timer;
-
-import 'dart:convert' show
-    JSON;
-
-import 'dart:math' show
-    max,
-    min;
-
-import '../../../sdk/lib/_internal/compiler/implementation/scanner/scannerlib.dart'
+import 'package:compiler/implementation/scanner/scannerlib.dart'
   show
     EOF_TOKEN,
     StringScanner,
     Token;
 
-import '../../../sdk/lib/_internal/compiler/implementation/source_file.dart' show
-    StringSourceFile;
-
-import 'compilation.dart' show
-    scheduleCompilation;
-
 import 'ui.dart' show
-    applyingSettings,
     currentTheme,
     hackDiv,
     inputPre,
@@ -43,8 +26,6 @@ import 'decoration.dart' show
     error,
     info,
     warning;
-
-import 'mock.dart' as mock;
 
 const String INDENT = '\u{a0}\u{a0}';
 
@@ -158,114 +139,6 @@ Element getElementAtSelection() {
   if (parent is! Element) return null;
   if (inputPre == parent) return null;
   return parent;
-}
-
-void displayCodeCompletion() {
-  throw 'broken';
-  if (activeCompletion != null) {
-    activeCompletion.classes.remove('active');
-    activeCompletion = null;
-  }
-  Element parent = getElementAtSelection();
-  if (parent == null) return;
-  Selection selection = window.getSelection();
-  Text text = selection.anchorNode;
-  int anchorOffset = selection.anchorOffset;
-  parent.classes.add('active');
-  var ui = parent.query('.dart-code-completion');
-  if (ui == null) return;
-
-  String prefix = text.data.substring(0, anchorOffset).trim();
-  print(prefix);
-  if (prefix.isEmpty) {
-    // Discard mutations.
-    observer.takeRecords();
-    return;
-  }
-
-  activeCompletion = parent;
-  //observer.disconnect();
-  ui.nodes.clear();
-
-  SpanElement inline = new SpanElement()
-      ..style.minWidth = '${minSuggestionWidth}px'
-      ..classes.add('hazed-suggestion');
-  if (minSuggestionWidth == 0) {
-    inline.style.display = 'none';
-  }
-  Text rest = text.splitText(anchorOffset);
-  text.parentNode.insertAllBefore([inline, rest], text.nextNode);
-
-  DivElement staticResults = new DivElement()
-      ..classes.addAll(['dart-static', 'dart-limited-height']);
-  DivElement serverResults = new DivElement()
-      ..style.display = 'none'
-      ..classes.add('dart-server');
-  ui.nodes.addAll([staticResults, serverResults]);
-
-  List<String> results = seenIdentifiers.where(
-      (String identifier) => identifier != prefix && identifier.startsWith(prefix))
-      .toList(growable: false)
-      ..sort();
-  if (results.isEmpty) results = <String>[prefix];
-  results.forEach((String completion) {
-    staticResults.nodes.add(buildCompletionEntry(completion));
-  });
-
-
-  String encodedArg0 = Uri.encodeComponent('"$prefix"');
-  String mindQuery =
-      'http://dart-mind.appspot.com/rpc'
-      '?action=GetExportingPubCompletions'
-      '&arg0=$encodedArg0';
-  try {
-    var serverWatch = new Stopwatch()..start();
-    HttpRequest.getString(mindQuery).then((String responseText) {
-      serverWatch.stop();
-      List<String> serverSuggestions = JSON.decode(responseText);
-      if (!serverSuggestions.isEmpty) {
-        String suggestion = serverSuggestions.first.substring(prefix.length);
-        if (!suggestion.isEmpty) {
-          inline
-              ..appendText(suggestion)
-              ..style.display = ''
-              ..style.minWidth = '${minSuggestionWidth}px';
-          minSuggestionWidth =
-              max(minSuggestionWidth, inline.getBoundingClientRect().width);
-          print('minSuggestionWidth: $minSuggestionWidth');
-        }
-      }
-      for (int i = 1; i < serverSuggestions.length; i++) {
-        String completion = serverSuggestions[i];
-        DivElement where = staticResults;
-        int index = results.indexOf(completion);
-        if (index != -1) {
-          List<Element> entries =
-              document.querySelectorAll('.dart-static>.dart-entry');
-          entries[index].classes.add('doubleplusgood');
-        } else {
-          if (results.length > 3) {
-            serverResults.style.display = 'block';
-            where = serverResults;
-          }
-          where.nodes.add(buildCompletionEntry(completion));
-        }
-      }
-      serverResults.appendHtml('<div>${serverWatch.elapsedMilliseconds}ms</div>');
-      // Discard mutations.
-      observer.takeRecords();
-    }).catchError((error, stack) {
-      window.console.dir(error);
-      window.console.error('$stack');
-    });
-  } catch (error, stack) {
-    window.console.dir(error);
-    window.console.error('$stack');
-  }
-  // Discard mutations.
-  observer.takeRecords();
-
-  //observer.observe(inputPre, childList: true, characterData: true, subtree: true);
 }
 
 bool isMalformedInput = false;

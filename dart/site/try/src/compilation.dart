@@ -30,8 +30,8 @@ import 'run.dart' show
 
 import 'ui.dart' show
     alwaysRunInWorker,
-    applyingSettings,
     buildButton,
+    compilationPaused,
     minified,
     onlyAnalyze,
     outputDiv,
@@ -47,7 +47,7 @@ SendPort compilerPort;
 Timer compilerTimer;
 
 void scheduleCompilation() {
-  if (applyingSettings) return;
+  if (compilationPaused) return;
   if (compilerTimer != null) {
     compilerTimer.cancel();
     compilerTimer = null;

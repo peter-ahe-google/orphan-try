@@ -7,6 +7,7 @@ library trydart.ui;
 import 'dart:html';
 
 import 'dart:async' show
+    Timer,
     scheduleMicrotask;
 
 import 'cache.dart' show
@@ -44,11 +45,11 @@ bool verboseCompiler = window.localStorage['verboseCompiler'] == 'true';
 bool minified = window.localStorage['minified'] == 'true';
 bool onlyAnalyze = window.localStorage['onlyAnalyze'] == 'true';
 bool enableDartMind = window.localStorage['enableDartMind'] == 'true';
+bool compilationPaused = window.localStorage['compilationPaused'] == 'true';
 final String rawCodeFont = window.localStorage['codeFont'];
 String codeFont = rawCodeFont == null ? '' : rawCodeFont;
 String currentSample = window.localStorage['currentSample'];
 Theme currentTheme = Theme.named(window.localStorage['theme']);
-bool applyingSettings = false;
 
 buildButton(message, action) {
   if (message is String) {
@@ -68,7 +69,7 @@ buildTab(message, id, action) {
     event.preventDefault();
     Element e = event.target;
     LIElement parent = e.parent;
-    parent.parent.query('li[class="active"]').classes.remove('active');
+    parent.parent.querySelector('li[class="active"]').classes.remove('active');
     parent.classes.add('active');
     action(event);
   }
@@ -82,7 +83,7 @@ Map<String, Function> inspirationCallbacks = new Map<String, Function>();
 
 void onInspirationChange(Event event) {
   SelectElement select = event.target;
-  String id = select.queryAll('option')[select.selectedIndex].id;
+  String id = select.querySelectorAll('option')[select.selectedIndex].id;
   Function action = inspirationCallbacks[id];
   if (action != null) action(event);
   outputFrame.style.display = 'none';
@@ -133,9 +134,9 @@ buildUI() {
 
   benchmarkGroup.append(buildTab('DeltaBlue', 'BENCHMARK_DELTA_BLUE', (_) {
     inputPre.contentEditable = 'false';
-    LinkElement link = query('link[rel="benchmark-DeltaBlue"]');
+    LinkElement link = querySelector('link[rel="benchmark-DeltaBlue"]');
     String deltaBlueUri = link.href;
-    link = query('link[rel="benchmark-base"]');
+    link = querySelector('link[rel="benchmark-base"]');
     String benchmarkBaseUri = link.href;
     HttpRequest.getString(benchmarkBaseUri).then((String benchmarkBase) {
       HttpRequest.getString(deltaBlueUri).then((String deltaBlue) {
@@ -154,9 +155,9 @@ buildUI() {
 
   benchmarkGroup.append(buildTab('Richards', 'BENCHMARK_RICHARDS', (_) {
     inputPre.contentEditable = 'false';
-    LinkElement link = query('link[rel="benchmark-Richards"]');
+    LinkElement link = querySelector('link[rel="benchmark-Richards"]');
     String richardsUri = link.href;
-    link = query('link[rel="benchmark-base"]');
+    link = querySelector('link[rel="benchmark-base"]');
     String benchmarkBaseUri = link.href;
     HttpRequest.getString(benchmarkBaseUri).then((String benchmarkBase) {
       HttpRequest.getString(richardsUri).then((String richards) {
@@ -174,7 +175,7 @@ buildUI() {
   }));
 
   // TODO(ahe): Update currentSample.  Or try switching to a drop-down menu.
-  var active = inspirationTabs.query('[id="$currentSample"]');
+  var active = inspirationTabs.querySelector('[id="$currentSample"]');
   if (active == null) {
     // inspirationTabs.query('li').classes.add('active');
   }
@@ -250,8 +251,7 @@ buildUI() {
   cacheStatusElement = document.getElementById('appcache-status');
   updateCacheStatus();
 
-  // TODO(ahe): Switch to two column layout so the console is on the right.
-  var section = document.query('article[class="homepage"]>section');
+  var section = document.querySelector('article[class="homepage"]>section');
 
   DivElement tryColumn = document.getElementById('try-dart-column');
   DivElement runColumn = document.getElementById('run-dart-column');
@@ -304,17 +304,25 @@ buildUI() {
   onLoad(null);
 }
 
+num settingsHeight = 0;
+
 void openSettings(MouseEvent event) {
   event.preventDefault();
 
-  var backdrop = new DivElement()..classes.add('modal-backdrop');
-  document.body.append(backdrop);
+  if (settingsHeight != 0) {
+    var dialog = document.getElementById('settings-dialog');
+    if (dialog.getBoundingClientRect().height > 0) {
+      dialog.style.height = '0px';
+    } else {
+      dialog.style.height = '${settingsHeight}px';
+    }
+    return;
+  }
 
   void updateCodeFont(Event e) {
     TextInputElement target = e.target;
     codeFont = target.value;
     inputPre.style.font = codeFont;
-    backdrop.style.opacity = '0.0';
   }
 
   void updateTheme(Event e) {
@@ -331,11 +339,10 @@ void openSettings(MouseEvent event) {
         ..backgroundColor = currentTheme.background.color
         ..color = currentTheme.foreground.color;
 
-    backdrop.style.opacity = '0.0';
-
-    applyingSettings = true;
+    bool oldCompilationPaused = compilationPaused;
+    compilationPaused = true;
     interaction.onMutation([], observer);
-    applyingSettings = false;
+    compilationPaused = false;
   }
 
 
@@ -387,6 +394,11 @@ void openSettings(MouseEvent event) {
           'Talk to "Dart Mind" server.', enableDartMind,
           (Event e) { enableDartMind = isChecked(e.target); }));
 
+  fieldSet.append(
+      buildCheckBox(
+          'Pause compilation.', compilationPaused,
+          (Event e) { compilationPaused = isChecked(e.target); }));
+
   fieldSet.append(new LabelElement()..appendText('Code font:'));
   var textInput = new TextInputElement();
   textInput.classes.add('input-block-level');
@@ -410,8 +422,17 @@ void openSettings(MouseEvent event) {
 
   var dialog = document.getElementById('settings-dialog');
 
-  dialog.style.display = 'block';
-  dialog.classes.add('in');
+  if (settingsHeight == 0) {
+    settingsHeight = dialog.getBoundingClientRect().height;
+    dialog.classes
+        ..add('slider')
+        ..remove('myhidden');
+    Timer.run(() {
+      dialog.style.height = '${settingsHeight}px';
+    });
+  } else {
+    dialog.style.height = '${settingsHeight}px';
+  }
 
   onSubmit(Event event) {
     event.preventDefault();
@@ -421,11 +442,10 @@ void openSettings(MouseEvent event) {
     window.localStorage['minified'] = '$minified';
     window.localStorage['onlyAnalyze'] = '$onlyAnalyze';
     window.localStorage['enableDartMind'] = '$enableDartMind';
+    window.localStorage['compilationPaused'] = '$compilationPaused';
     window.localStorage['codeFont'] = '$codeFont';
 
-    dialog.style.display = 'none';
-    dialog.classes.remove('in');
-    backdrop.remove();
+    dialog.style.height = '0px';
   }
   form.onSubmit.listen(onSubmit);
 

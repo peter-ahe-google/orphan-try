@@ -6,9 +6,6 @@ library trydart.interaction_manager;
 
 import 'dart:html';
 
-import 'dart:async' show
-    Timer;
-
 import 'dart:convert' show
     JSON;
 
@@ -16,20 +13,19 @@ import 'dart:math' show
     max,
     min;
 
-import '../../../sdk/lib/_internal/compiler/implementation/scanner/scannerlib.dart'
+import 'package:compiler/implementation/scanner/scannerlib.dart'
   show
     EOF_TOKEN,
     StringScanner,
     Token;
 
-import '../../../sdk/lib/_internal/compiler/implementation/source_file.dart' show
+import 'package:compiler/implementation/source_file.dart' show
     StringSourceFile;
 
 import 'compilation.dart' show
     scheduleCompilation;
 
 import 'ui.dart' show
-    applyingSettings,
     currentTheme,
     enableDartMind,
     hackDiv,
@@ -156,13 +152,13 @@ class InitialState extends InteractionState {
   void onMutation(List<MutationRecord> mutations, MutationObserver observer) {
     print('onMutation');
 
-    for (Element element in inputPre.queryAll('a.diagnostic>span')) {
+    for (Element element in inputPre.querySelectorAll('a.diagnostic>span')) {
       element.remove();
     }
-    for (Element element in inputPre.queryAll('.dart-code-completion')) {
+    for (Element element in inputPre.querySelectorAll('.dart-code-completion')) {
       element.remove();
     }
-    for (Element element in inputPre.queryAll('.hazed-suggestion')) {
+    for (Element element in inputPre.querySelectorAll('.hazed-suggestion')) {
       element.remove();
     }
 
@@ -326,7 +322,9 @@ class InitialState extends InteractionState {
   void onSelectionChange(Event event) {
   }
 
-  void showCodeCompletion(Element parent, Element ui) {
+  void onStateChanged(InteractionState previous) {
+    super.onStateChanged(previous);
+    scheduleCompilation();
   }
 }
 
@@ -346,7 +344,7 @@ class PendingInputState extends InitialState {
     Element parent = editor.getElementAtSelection();
     Element ui;
     if (parent != null) {
-      ui = parent.query('.dart-code-completion');
+      ui = parent.querySelector('.dart-code-completion');
       if (ui != null) {
         nextState = new CodeCompletionState(context, parent, ui);
       }

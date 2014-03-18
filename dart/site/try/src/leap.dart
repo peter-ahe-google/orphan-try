@@ -7,7 +7,7 @@ library trydart.main;
 import 'dart:html' show
     HttpRequest,
     LinkElement,
-    query,
+    querySelector,
     window;
 
 import 'dart:isolate' show
@@ -58,7 +58,7 @@ main() {
     } else {
       port = spawnDomFunction(compilerIsolate);
     }
-    LinkElement link = query('link[rel="dart-sdk"]');
+    LinkElement link = querySelector('link[rel="dart-sdk"]');
     String sdk = link.href;
     print('Using Dart SDK: $sdk');
     int messageCount = 0;
