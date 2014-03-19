@@ -38,6 +38,8 @@ import 'ui.dart' show
     outputFrame,
     verboseCompiler;
 
+@lazy import 'caching_compiler.dart' as cacheCompiler;
+
 @lazy import 'compiler_isolate.dart';
 
 // const lazy = const DeferredLibrary('compiler_isolate');
@@ -168,6 +170,7 @@ self.importScripts("$url");
       var frame = makeOutputFrame(url);
       outputFrame.replaceWith(frame);
       outputFrame = frame;
+      console.append(buildButton('Try in iframe', retryInIframe));
     }
     void onError(String errorMessage) {
       console.appendText(errorMessage);
@@ -284,4 +287,5 @@ void compilerIsolate(SendPort port) {
       port.send('$exception\n$stack');
     }
   });
+  // cacheCompiler.compilerFor(null);
 }
