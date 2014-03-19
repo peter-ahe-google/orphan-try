@@ -123,7 +123,19 @@ class InitialState extends InteractionState {
   }
 
   void onKeyUp(KeyboardEvent event) {
-    print('onKeyUp');
+    if (computeHasModifier(event)) {
+      print('onKeyUp (modified)');
+      onModifiedKeyUp(event);
+    } else {
+      print('onKeyUp (unmodified)');
+      onUnmodifiedKeyUp(event);
+    }
+  }
+
+  void onModifiedKeyUp(KeyboardEvent event) {
+  }
+
+  void onUnmodifiedKeyUp(KeyboardEvent event) {
     switch (event.keyCode) {
       case KeyCode.ENTER: {
         event.preventDefault();
@@ -371,7 +383,11 @@ class CodeCompletionState extends InitialState {
     // Do nothing.
   }
 
-  void onKeyUp(KeyboardEvent event) {
+  void onModifiedKeyUp(KeyboardEvent event) {
+    // TODO(ahe): Handle DOWN (jump to server results).
+  }
+
+  void onUnmodifiedKeyUp(KeyboardEvent event) {
     switch (event.keyCode) {
       case KeyCode.DOWN:
         return moveDown(event);
@@ -574,7 +590,9 @@ class CodeCompletionState extends InitialState {
                 serverResults.style.display = 'block';
                 where = serverResults;
               }
-              where.nodes.add(buildCompletionEntry(completion));
+              Element entry = buildCompletionEntry(completion);
+              entry.classes.add('doubleplusgood');
+              where.nodes.add(entry);
             }
           }
           serverResults.appendHtml('<div>${serverWatch.elapsedMilliseconds}ms</div>');
@@ -603,4 +621,21 @@ class CodeCompletionState extends InitialState {
 Token tokenize(String text) {
   var file = new StringSourceFile('', text);
   return new StringScanner(file, includeComments: true).tokenize();
+}
+
+bool computeHasModifier(KeyboardEvent event) {
+  return
+      event.getModifierState("Alt") ||
+      event.getModifierState("AltGraph") ||
+      event.getModifierState("CapsLock") ||
+      event.getModifierState("Control") ||
+      event.getModifierState("Fn") ||
+      event.getModifierState("Meta") ||
+      event.getModifierState("NumLock") ||
+      event.getModifierState("ScrollLock") ||
+      event.getModifierState("Scroll") ||
+      event.getModifierState("Win") ||
+      event.getModifierState("Shift") ||
+      event.getModifierState("SymbolLock") ||
+      event.getModifierState("OS");
 }
