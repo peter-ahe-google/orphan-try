@@ -10,6 +10,7 @@
     # The above file needs to be first as it imports required libraries.
     'bool.cc',
     'bool_patch.dart',
+    'breakpoint_patch.dart',
     'date.cc',
     'date_patch.dart',
     'array.cc',

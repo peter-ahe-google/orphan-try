@@ -8,6 +8,7 @@
     # The above file needs to be first as it lists the parts below.
     'annotations.dart',
     'bool.dart',
+    'breakpoint.dart',
     'comparable.dart',
     'date_time.dart',
     'double.dart',

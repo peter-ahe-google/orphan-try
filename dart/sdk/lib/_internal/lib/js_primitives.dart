@@ -48,3 +48,7 @@ void printString(String string) {
   // avoid using Dart [:throw:] and Dart [toString].
   JS('void', 'throw "Unable to print message: " + String(#)', string);
 }
+
+void breakpoint() {
+  JS('void', 'debugger');
+}

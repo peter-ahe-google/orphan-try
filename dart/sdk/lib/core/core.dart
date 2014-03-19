@@ -160,6 +160,7 @@ import "dart:math" show Random;  // Used by List.shuffle.
 
 part "annotations.dart";
 part "bool.dart";
+part "breakpoint.dart";
 part "comparable.dart";
 part "date_time.dart";
 part "double.dart";

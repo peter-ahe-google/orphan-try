@@ -12,6 +12,8 @@ import 'dart:_js_helper' show checkNull,
                               stringJoinUnchecked,
                               objectHashCode;
 
+import 'dart:_js_primitives' as jsPrimitives;
+
 String _symbolToString(Symbol symbol) => _symbol_dev.Symbol.getName(symbol);
 
 _symbolMapToStringMap(Map<Symbol, dynamic> map) {
@@ -329,4 +331,8 @@ patch class Uri {
     if (uri != null) return Uri.parse(uri);
     throw new UnsupportedError("'Uri.base' is not supported");
   }
+}
+
+patch void get breakpoint {
+  jsPrimitives.breakpoint();
 }
