@@ -12,10 +12,7 @@ class Conversation {
 
   static const String CONTENT_TYPE = HttpHeaders.CONTENT_TYPE;
 
-  static const String LEAP_LANDING_PAGE =
-      'sdk/lib/_internal/compiler/samples/leap/index.html';
-
-  static String landingPage = LEAP_LANDING_PAGE;
+  static Uri documentRoot = Uri.base;
 
   Conversation(this.request, this.response);
 
@@ -42,13 +39,18 @@ class Conversation {
       .then(onClosed)
       .catchError(onError);
 
-    String path = request.uri.path;
-    if (path == '/') return redirect('/$landingPage');
-    if (path == '/favicon.ico') {
-      path = '/sdk/lib/_internal/dartdoc/static/favicon.ico';
+    Uri uri = request.uri;
+    if (uri.path.endsWith('/')) {
+      uri = uri.resolve('index.html');
     }
-    if (path.contains('..') || path.contains('%')) return notFound(path);
-    var f = new File("./$path");
+    if (uri.path == '/css/fonts/fontawesome-webfont.woff') {
+      uri = uri.resolve('/fontawesome-webfont.woff');
+    }
+    if (uri.path.contains('..') || uri.path.contains('%')) {
+      return notFound(uri.path);
+    }
+    String path = uri.path;
+    var f = new File(documentRoot.resolve('.$path').toFilePath());
     f.exists().then((bool exists) {
       if (!exists) return notFound(path);
       if (path.endsWith('.html')) {
@@ -96,7 +98,7 @@ class Conversation {
 
 main(List<String> arguments) {
   if (arguments.length > 0) {
-    Conversation.landingPage = arguments[0];
+    Conversation.documentRoot = Uri.base.resolve(arguments[0]);
   }
   var host = '127.0.0.1';
   if (arguments.length > 1) {
