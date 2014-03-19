@@ -187,7 +187,11 @@ addDiagnostic(String kind, String message, int begin, int end) {
       offset = newOffset;
     } else if (type == Node.ELEMENT_NODE) {
       Element element = node;
-      if (element.classes.contains('alert')) return;
+      CssClassSet classes = element.classes;
+      if (classes.contains('alert') ||
+          classes.contains('dart-code-completion')) {
+        return;
+      }
     }
 
     var child = node.firstChild;
