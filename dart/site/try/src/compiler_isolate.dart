@@ -9,6 +9,8 @@ import 'dart:html';
 import 'dart:isolate';
 import 'dart:convert' show JSON;
 
+import 'compilation.dart' show PRIVATE_SCHEME;
+
 import 'package:compiler/compiler.dart' as compiler;
 
 const bool THROW_ON_ERROR = false;
@@ -64,7 +66,7 @@ compile(source, SendPort replyTo) {
       });
       charactersRead += value.length;
       return new Future.value(value);
-    } else if ('$uri' == 'memory:/main.dart') {
+    } else if ('$uri' == '$PRIVATE_SCHEME:/main.dart') {
       charactersRead += source.length;
       return new Future.value(source);
     }
@@ -81,7 +83,7 @@ compile(source, SendPort replyTo) {
       throw new Exception('Throw on error');
     }
   }
-  compiler.compile(Uri.parse('memory:/main.dart'),
+  compiler.compile(Uri.parse('$PRIVATE_SCHEME:/main.dart'),
                    sdkLocation,
                    null,
                    inputProvider,

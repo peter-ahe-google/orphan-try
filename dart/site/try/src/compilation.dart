@@ -45,6 +45,19 @@ import 'ui.dart' show
 // const lazy = const DeferredLibrary('compiler_isolate');
 const lazy = null;
 
+/**
+ * Scheme for recognizing files stored in memory.
+ *
+ * From http://tools.ietf.org/html/bcp35#section-2.8:
+ *
+ * Organizations that desire a private name space for URI scheme names
+ * are encouraged to use a prefix based on their domain name, expressed
+ * in reverse order.  For example, a URI scheme name of com-example-info
+ * might be registered by the vendor that owns the example.com domain
+ * name.
+ */
+const String PRIVATE_SCHEME = 'org-trydart';
+
 SendPort compilerPort;
 Timer compilerTimer;
 
@@ -257,7 +270,7 @@ self.importScripts("$url");
       consolePrint(message);
       return;
     }
-    if (uri != 'memory:/main.dart') return;
+    if (uri != '${PRIVATE_SCHEME}:/main.dart') return;
     if (currentSource != source) return;
     int begin = diagnostic['begin'];
     int end = diagnostic['end'];
