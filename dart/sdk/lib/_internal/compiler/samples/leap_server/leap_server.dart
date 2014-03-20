@@ -6,13 +6,35 @@ library leap_server;
 
 import 'dart:io';
 
+import 'dart:convert' show JSON, HtmlEscape;
+
+class ProjectCommand {
+  final String name;
+  final Map<String, String> rules;
+  final Function handle;
+
+  const ProjectCommand(this.name, this.rules, this.handle);
+}
+
 class Conversation {
   HttpRequest request;
   HttpResponse response;
 
+  static const String PROJECT_PATH = '/project';
+
+  static const String PACKAGES_PATH = '/packages';
+
   static const String CONTENT_TYPE = HttpHeaders.CONTENT_TYPE;
 
   static Uri documentRoot = Uri.base;
+
+  static Uri projectRoot = Uri.base.resolve('site/try/src/');
+
+  static Uri packageRoot = Uri.base.resolve('sdk/lib/_internal/');
+
+  static const List<ProjectCommand> COMMANDS = const <ProjectCommand>[
+      const ProjectCommand('list', const {'list': null}, handleProjectList),
+    ];
 
   Conversation(this.request, this.response);
 
@@ -34,12 +56,77 @@ class Conversation {
     response.close();
   }
 
+  badRequest(String problem) {
+    response.statusCode = HttpStatus.BAD_REQUEST;
+    response.write(htmlInfo("Bad request",
+                            "Bad request '${request.uri}': $problem"));
+    response.close();
+  }
+
+  bool validate(Map<String, String> parameters, Map<String, String> rules) {
+    String problem;
+    rules.forEach((String name, String desc) {
+      if (problem != null) return;
+      if (!parameters.containsKey(name)) {
+        return problem = "Missing parameter: '$name'.";
+      }
+    });
+    if (problem == null) {
+      Set extra = new Set.from(parameters.keys)..removeAll(rules.keys);
+      if (!extra.isEmpty) {
+        String extraString = (extra.toList()..sort()).join("', '");
+        problem = "Extra parameters: '$extraString'.";
+      }
+    }
+    if (problem != null) {
+      badRequest(problem);
+      return false;
+    }
+    return true;
+  }
+
+  static handleProjectList(Conversation self) {
+    String nativeDir = projectRoot.toFilePath();
+    Directory dir = new Directory(nativeDir);
+    var future = dir.list(recursive: true, followLinks: false).toList();
+    future.then((List<FileSystemEntity> entries) {
+      List<String> files = <String>[];
+      for (FileSystemEntity entry in entries) {
+        String nativePath = entry.path;
+        if (nativePath.endsWith("~")) continue;
+        if (!nativePath.startsWith(nativeDir)) continue;
+        nativePath = nativePath.substring(nativeDir.length);
+        files.add(new Uri.file(nativePath).path);
+      }
+      self.response
+          ..write(JSON.encode(files))
+          ..close();
+    });
+  }
+
+  handleProjectRequest() {
+    Map<String, String> parameters = request.uri.queryParameters;
+    for (ProjectCommand command in COMMANDS) {
+      if (parameters.containsKey(command.name)) {
+        if (validate(parameters, command.rules)) {
+          (command.handle)(this);
+        }
+        return;
+      }
+    }
+    String commands = COMMANDS.map((c) => c.name).join("', '");
+    badRequest("Valid commands are: '$commands'");
+  }
+
   handle() {
     response.done
       .then(onClosed)
       .catchError(onError);
 
     Uri uri = request.uri;
+    if (uri.path == PROJECT_PATH) {
+      return handleProjectRequest();
+    }
     if (uri.path.endsWith('/')) {
       uri = uri.resolve('index.html');
     }
@@ -50,13 +137,26 @@ class Conversation {
       return notFound(uri.path);
     }
     String path = uri.path;
-    var f = new File(documentRoot.resolve('.$path').toFilePath());
+    Uri root = documentRoot;
+    String dartType = 'application/dart';
+    if (path.startsWith('/project/packages/')) {
+      root = packageRoot;
+      path = path.substring('/project/packages'.length);
+    } else if (path.startsWith('${PROJECT_PATH}/')) {
+      root = projectRoot;
+      path = path.substring(PROJECT_PATH.length);
+      dartType = 'text/plain';
+    } else if (path.startsWith('${PACKAGES_PATH}/')) {
+      root = packageRoot;
+      path = path.substring(PACKAGES_PATH.length);
+    }
+    var f = new File(root.resolve('.$path').toFilePath());
     f.exists().then((bool exists) {
       if (!exists) return notFound(path);
       if (path.endsWith('.html')) {
         response.headers.set(CONTENT_TYPE, 'text/html');
       } else if (path.endsWith('.dart')) {
-        response.headers.set(CONTENT_TYPE, 'application/dart');
+        response.headers.set(CONTENT_TYPE, dartType);
       } else if (path.endsWith('.js')) {
         response.headers.set(CONTENT_TYPE, 'application/javascript');
       } else if (path.endsWith('.ico')) {
@@ -81,6 +181,9 @@ class Conversation {
   }
 
   String htmlInfo(String title, String text) {
+    // No script injection, please.
+    title = const HtmlEscape().convert(title);
+    text = const HtmlEscape().convert(text);
     return """
 <!DOCTYPE html>
 <html lang='en'>
@@ -107,6 +210,12 @@ main(List<String> arguments) {
   int port = 0;
   if (arguments.length > 2) {
     port = int.parse(arguments[2]);
+  }
+  if (arguments.length > 3) {
+    Conversation.projectRoot = Uri.base.resolve(arguments[3]);
+  }
+  if (arguments.length > 4) {
+    Conversation.packageRoot = Uri.base.resolve(arguments[4]);
   }
   HttpServer.bind(host, port).then((HttpServer server) {
     print('HTTP server started on http://$host:${server.port}/');
