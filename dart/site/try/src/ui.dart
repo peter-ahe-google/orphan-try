@@ -7,8 +7,11 @@ library trydart.ui;
 import 'dart:html';
 
 import 'dart:async' show
+    Future,
     Timer,
     scheduleMicrotask;
+
+import 'dart:convert' show JSON;
 
 import 'cache.dart' show
     onLoad,
@@ -94,91 +97,7 @@ buildUI() {
 
   window.localStorage['currentSample'] = '$currentSample';
 
-  var inspirationTabs = document.getElementById('inspiration');
-  var htmlGroup = new OptGroupElement()..label = 'HTML';
-  var benchmarkGroup = new OptGroupElement()..label = 'Benchmarks';
-  inspirationTabs.append(new OptionElement()..appendText('Pick an example'));
-  inspirationTabs.onChange.listen(onInspirationChange);
-  // inspirationTabs.classes.addAll(['nav', 'nav-tabs']);
-  inspirationTabs.append(buildTab('Hello, World!', 'EXAMPLE_HELLO', (_) {
-    inputPre
-        ..nodes.clear()
-        ..appendText(EXAMPLE_HELLO);
-  }));
-  inspirationTabs.append(buildTab('Fibonacci', 'EXAMPLE_FIBONACCI', (_) {
-    inputPre
-        ..nodes.clear()
-        ..appendText(EXAMPLE_FIBONACCI);
-  }));
-  inspirationTabs.append(htmlGroup);
-  // TODO(ahe): Restore benchmarks.
-  // inspirationTabs.append(benchmarkGroup);
-
-  htmlGroup.append(
-      buildTab('Hello, World!', 'EXAMPLE_HELLO_HTML', (_) {
-    inputPre
-        ..nodes.clear()
-        ..appendText(EXAMPLE_HELLO_HTML);
-  }));
-  htmlGroup.append(
-      buildTab('Fibonacci', 'EXAMPLE_FIBONACCI_HTML', (_) {
-    inputPre
-        ..nodes.clear()
-        ..appendText(EXAMPLE_FIBONACCI_HTML);
-  }));
-  htmlGroup.append(buildTab('Sunflower', 'EXAMPLE_SUNFLOWER', (_) {
-    inputPre
-        ..nodes.clear()
-        ..appendText(EXAMPLE_SUNFLOWER);
-  }));
-
-  benchmarkGroup.append(buildTab('DeltaBlue', 'BENCHMARK_DELTA_BLUE', (_) {
-    inputPre.contentEditable = 'false';
-    LinkElement link = querySelector('link[rel="benchmark-DeltaBlue"]');
-    String deltaBlueUri = link.href;
-    link = querySelector('link[rel="benchmark-base"]');
-    String benchmarkBaseUri = link.href;
-    HttpRequest.getString(benchmarkBaseUri).then((String benchmarkBase) {
-      HttpRequest.getString(deltaBlueUri).then((String deltaBlue) {
-        benchmarkBase = benchmarkBase.replaceFirst(
-            'part of benchmark_harness;', '// part of benchmark_harness;');
-        deltaBlue = deltaBlue.replaceFirst(
-            "import 'package:benchmark_harness/benchmark_harness.dart';",
-            benchmarkBase);
-        inputPre
-            ..nodes.clear()
-            ..appendText(deltaBlue)
-            ..contentEditable = 'true';
-      });
-    });
-  }));
-
-  benchmarkGroup.append(buildTab('Richards', 'BENCHMARK_RICHARDS', (_) {
-    inputPre.contentEditable = 'false';
-    LinkElement link = querySelector('link[rel="benchmark-Richards"]');
-    String richardsUri = link.href;
-    link = querySelector('link[rel="benchmark-base"]');
-    String benchmarkBaseUri = link.href;
-    HttpRequest.getString(benchmarkBaseUri).then((String benchmarkBase) {
-      HttpRequest.getString(richardsUri).then((String richards) {
-        benchmarkBase = benchmarkBase.replaceFirst(
-            'part of benchmark_harness;', '// part of benchmark_harness;');
-        richards = richards.replaceFirst(
-            "import 'package:benchmark_harness/benchmark_harness.dart';",
-            benchmarkBase);
-        inputPre
-            ..nodes.clear()
-            ..appendText(richards)
-            ..contentEditable = 'true';
-      });
-    });
-  }));
-
-  // TODO(ahe): Update currentSample.  Or try switching to a drop-down menu.
-  var active = inspirationTabs.querySelector('[id="$currentSample"]');
-  if (active == null) {
-    // inspirationTabs.query('li').classes.add('active');
-  }
+  buildInspiration(interaction);
 
   (inputPre = new DivElement())
       ..classes.add('well')
@@ -302,6 +221,126 @@ buildUI() {
   // However, in dart2js, the window has already loaded, and onLoad is
   // never called.
   onLoad(null);
+}
+
+buildInspiration(InteractionManager interaction) {
+  var inspirationTabs =
+      document.getElementById('inspiration')
+      ..style.visibility = 'hidden'
+      ..onChange.listen(onInspirationChange);
+  var htmlGroup = new OptGroupElement()..label = 'HTML';
+  var benchmarkGroup = new OptGroupElement()..label = 'Benchmarks';
+
+  new Future(() => HttpRequest.getString('project?list').then((String response) {
+    OptionElement none = new OptionElement()
+        ..appendText('--')
+        ..disabled = true;
+    inspirationTabs.append(none);
+    for (String projectFile in JSON.decode(response)) {
+      inspirationTabs.append(buildTab(projectFile, projectFile, (_) {
+        inputPre.contentEditable = 'false';
+        HttpRequest.getString('project/$projectFile').then((String text) {
+          inputPre
+              ..contentEditable = 'true'
+              ..nodes.clear();
+          observer.takeRecords();
+          inputPre.appendText(text);
+        });
+      }));
+    }
+    inspirationTabs.style.visibility = 'visible';
+    inspirationTabs.selectedIndex = 0;
+  })).catchError((error) {
+    inspirationTabs.style.visibility = 'visible';
+    print(error);
+    OptionElement none = new OptionElement()
+        ..appendText('Pick an example')
+        ..disabled = true;
+    inspirationTabs.append(none);
+
+    // inspirationTabs.classes.addAll(['nav', 'nav-tabs']);
+    inspirationTabs.append(buildTab('Hello, World!', 'EXAMPLE_HELLO', (_) {
+      inputPre
+          ..nodes.clear()
+          ..appendText(EXAMPLE_HELLO);
+    }));
+    inspirationTabs.append(buildTab('Fibonacci', 'EXAMPLE_FIBONACCI', (_) {
+      inputPre
+          ..nodes.clear()
+          ..appendText(EXAMPLE_FIBONACCI);
+    }));
+    inspirationTabs.append(htmlGroup);
+    // TODO(ahe): Restore benchmarks.
+    // inspirationTabs.append(benchmarkGroup);
+
+    htmlGroup.append(
+        buildTab('Hello, World!', 'EXAMPLE_HELLO_HTML', (_) {
+      inputPre
+          ..nodes.clear()
+          ..appendText(EXAMPLE_HELLO_HTML);
+    }));
+    htmlGroup.append(
+        buildTab('Fibonacci', 'EXAMPLE_FIBONACCI_HTML', (_) {
+      inputPre
+          ..nodes.clear()
+          ..appendText(EXAMPLE_FIBONACCI_HTML);
+    }));
+    htmlGroup.append(buildTab('Sunflower', 'EXAMPLE_SUNFLOWER', (_) {
+      inputPre
+          ..nodes.clear()
+          ..appendText(EXAMPLE_SUNFLOWER);
+    }));
+
+    benchmarkGroup.append(buildTab('DeltaBlue', 'BENCHMARK_DELTA_BLUE', (_) {
+      inputPre.contentEditable = 'false';
+      LinkElement link = querySelector('link[rel="benchmark-DeltaBlue"]');
+      String deltaBlueUri = link.href;
+      link = querySelector('link[rel="benchmark-base"]');
+      String benchmarkBaseUri = link.href;
+      HttpRequest.getString(benchmarkBaseUri).then((String benchmarkBase) {
+        HttpRequest.getString(deltaBlueUri).then((String deltaBlue) {
+          benchmarkBase = benchmarkBase.replaceFirst(
+              'part of benchmark_harness;', '// part of benchmark_harness;');
+          deltaBlue = deltaBlue.replaceFirst(
+              "import 'package:benchmark_harness/benchmark_harness.dart';",
+              benchmarkBase);
+          inputPre
+              ..nodes.clear()
+              ..appendText(deltaBlue)
+              ..contentEditable = 'true';
+        });
+      });
+    }));
+
+    benchmarkGroup.append(buildTab('Richards', 'BENCHMARK_RICHARDS', (_) {
+      inputPre.contentEditable = 'false';
+      LinkElement link = querySelector('link[rel="benchmark-Richards"]');
+      String richardsUri = link.href;
+      link = querySelector('link[rel="benchmark-base"]');
+      String benchmarkBaseUri = link.href;
+      HttpRequest.getString(benchmarkBaseUri).then((String benchmarkBase) {
+        HttpRequest.getString(richardsUri).then((String richards) {
+          benchmarkBase = benchmarkBase.replaceFirst(
+              'part of benchmark_harness;', '// part of benchmark_harness;');
+          richards = richards.replaceFirst(
+              "import 'package:benchmark_harness/benchmark_harness.dart';",
+              benchmarkBase);
+          inputPre
+              ..nodes.clear()
+              ..appendText(richards)
+              ..contentEditable = 'true';
+        });
+      });
+    }));
+
+    inspirationTabs.selectedIndex = 0;
+
+    // TODO(ahe): Update currentSample.  Or try switching to a drop-down menu.
+    var active = inspirationTabs.querySelector('[id="$currentSample"]');
+    if (active == null) {
+      // inspirationTabs.query('li').classes.add('active');
+    }
+  });
 }
 
 num settingsHeight = 0;

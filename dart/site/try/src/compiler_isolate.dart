@@ -69,6 +69,8 @@ compile(source, SendPort replyTo) {
     } else if ('$uri' == '$PRIVATE_SCHEME:/main.dart') {
       charactersRead += source.length;
       return new Future.value(source);
+    } else if (uri.scheme == PRIVATE_SCHEME) {
+      return HttpRequest.getString('project${uri.path}');
     }
     throw new Exception('Error: Cannot read: $uri');
   }
@@ -85,7 +87,7 @@ compile(source, SendPort replyTo) {
   }
   compiler.compile(Uri.parse('$PRIVATE_SCHEME:/main.dart'),
                    sdkLocation,
-                   null,
+                   Uri.parse('packages/'),
                    inputProvider,
                    handler,
                    options).then((js) {
