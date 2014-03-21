@@ -77,17 +77,17 @@ buildTab(message, id, action) {
     action(event);
   }
 
-  inspirationCallbacks[id] = action;
+  codeCallbacks[id] = action;
 
   return new OptionElement()..append(message)..id = id;
 }
 
-Map<String, Function> inspirationCallbacks = new Map<String, Function>();
+Map<String, Function> codeCallbacks = new Map<String, Function>();
 
-void onInspirationChange(Event event) {
+void onCodeChange(Event event) {
   SelectElement select = event.target;
   String id = select.querySelectorAll('option')[select.selectedIndex].id;
-  Function action = inspirationCallbacks[id];
+  Function action = codeCallbacks[id];
   if (action != null) action(event);
   outputFrame.style.display = 'none';
 }
@@ -97,7 +97,7 @@ buildUI() {
 
   window.localStorage['currentSample'] = '$currentSample';
 
-  buildInspiration(interaction);
+  buildCode(interaction);
 
   (inputPre = new DivElement())
       ..classes.add('well')
@@ -223,11 +223,11 @@ buildUI() {
   onLoad(null);
 }
 
-buildInspiration(InteractionManager interaction) {
-  var inspirationTabs =
-      document.getElementById('inspiration')
+buildCode(InteractionManager interaction) {
+  var codePicker =
+      document.getElementById('code-picker')
       ..style.visibility = 'hidden'
-      ..onChange.listen(onInspirationChange);
+      ..onChange.listen(onCodeChange);
   var htmlGroup = new OptGroupElement()..label = 'HTML';
   var benchmarkGroup = new OptGroupElement()..label = 'Benchmarks';
 
@@ -235,9 +235,9 @@ buildInspiration(InteractionManager interaction) {
     OptionElement none = new OptionElement()
         ..appendText('--')
         ..disabled = true;
-    inspirationTabs.append(none);
+    codePicker.append(none);
     for (String projectFile in JSON.decode(response)) {
-      inspirationTabs.append(buildTab(projectFile, projectFile, (_) {
+      codePicker.append(buildTab(projectFile, projectFile, (_) {
         inputPre.contentEditable = 'false';
         HttpRequest.getString('project/$projectFile').then((String text) {
           inputPre
@@ -248,30 +248,30 @@ buildInspiration(InteractionManager interaction) {
         });
       }));
     }
-    inspirationTabs.style.visibility = 'visible';
-    inspirationTabs.selectedIndex = 0;
+    codePicker.style.visibility = 'visible';
+    codePicker.selectedIndex = 0;
   })).catchError((error) {
-    inspirationTabs.style.visibility = 'visible';
+    codePicker.style.visibility = 'visible';
     print(error);
     OptionElement none = new OptionElement()
         ..appendText('Pick an example')
         ..disabled = true;
-    inspirationTabs.append(none);
+    codePicker.append(none);
 
-    // inspirationTabs.classes.addAll(['nav', 'nav-tabs']);
-    inspirationTabs.append(buildTab('Hello, World!', 'EXAMPLE_HELLO', (_) {
+    // codePicker.classes.addAll(['nav', 'nav-tabs']);
+    codePicker.append(buildTab('Hello, World!', 'EXAMPLE_HELLO', (_) {
       inputPre
           ..nodes.clear()
           ..appendText(EXAMPLE_HELLO);
     }));
-    inspirationTabs.append(buildTab('Fibonacci', 'EXAMPLE_FIBONACCI', (_) {
+    codePicker.append(buildTab('Fibonacci', 'EXAMPLE_FIBONACCI', (_) {
       inputPre
           ..nodes.clear()
           ..appendText(EXAMPLE_FIBONACCI);
     }));
-    inspirationTabs.append(htmlGroup);
+    codePicker.append(htmlGroup);
     // TODO(ahe): Restore benchmarks.
-    // inspirationTabs.append(benchmarkGroup);
+    // codePicker.append(benchmarkGroup);
 
     htmlGroup.append(
         buildTab('Hello, World!', 'EXAMPLE_HELLO_HTML', (_) {
@@ -333,12 +333,12 @@ buildInspiration(InteractionManager interaction) {
       });
     }));
 
-    inspirationTabs.selectedIndex = 0;
+    codePicker.selectedIndex = 0;
 
     // TODO(ahe): Update currentSample.  Or try switching to a drop-down menu.
-    var active = inspirationTabs.querySelector('[id="$currentSample"]');
+    var active = codePicker.querySelector('[id="$currentSample"]');
     if (active == null) {
-      // inspirationTabs.query('li').classes.add('active');
+      // codePicker.query('li').classes.add('active');
     }
   });
 }
