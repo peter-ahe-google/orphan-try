@@ -70,7 +70,7 @@ void set codeFont(String b) {
 }
 
 const StringUserOption _currentSample =
-    const StringUserOption('currentSample');
+    const StringUserOption('currentSample', isHidden: true);
 
 String get currentSample => _currentSample.value;
 
@@ -87,6 +87,9 @@ void set theme(String b) {
   _theme.value = b;
 }
 
+const BooleanUserOption enableCodeCompletion =
+    const BooleanUserOption('enableCodeCompletion', isHidden: true);
+
 const List<UserOption> options = const <UserOption>[
     _alwaysRunInWorker,
     _verboseCompiler,
@@ -95,6 +98,7 @@ const List<UserOption> options = const <UserOption>[
     _enableDartMind,
     _compilationPaused,
     _codeFont,
-    _currentSample,
     _theme,
+    _currentSample,
+    enableCodeCompletion,
   ];

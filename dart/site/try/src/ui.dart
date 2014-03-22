@@ -431,28 +431,29 @@ void openSettings(MouseEvent event) {
     fieldSet.append(textInput);
   }
 
+  void addThemeOption(StringUserOption option) {
+    fieldSet.append(new LabelElement()..appendText('Theme:'));
+    var themeSelector = new SelectElement();
+    themeSelector.classes.add('input-block-level');
+    for (Theme theme in THEMES) {
+      OptionElement option = new OptionElement()..appendText(theme.name);
+      if (theme == currentTheme) option.selected = true;
+      themeSelector.append(option);
+    }
+    themeSelector.onChange.listen(updateTheme);
+    fieldSet.append(themeSelector);
+  }
+
   for (UserOption option in options) {
+    if (option.isHidden) continue;
     if (option.name == 'theme') {
       addThemeOption(option);
-    }
-    if (option is BooleanUserOption) {
+    } else if (option is BooleanUserOption) {
       addBooleanOption(option);
     } else if (option is StringUserOption) {
       addStringOption(option);
     }
   }
-
-
-  fieldSet.append(new LabelElement()..appendText('Theme:'));
-  var themeSelector = new SelectElement();
-  themeSelector.classes.add('input-block-level');
-  for (Theme theme in THEMES) {
-    OptionElement option = new OptionElement()..appendText(theme.name);
-    if (theme == currentTheme) option.selected = true;
-    themeSelector.append(option);
-  }
-  themeSelector.onChange.listen(updateTheme);
-  fieldSet.append(themeSelector);
 
   var dialog = document.getElementById('settings-dialog');
 

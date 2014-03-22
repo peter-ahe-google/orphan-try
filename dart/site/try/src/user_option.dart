@@ -7,9 +7,11 @@ library trydart.userOption;
 class UserOption {
   final String name;
 
+  final bool isHidden;
+
   static var storage;
 
-  const UserOption(this.name);
+  const UserOption(this.name, {this.isHidden: false});
 
   get value => storage[name];
 
@@ -19,8 +21,8 @@ class UserOption {
 }
 
 class BooleanUserOption extends UserOption {
-  const BooleanUserOption(String name)
-      : super(name);
+  const BooleanUserOption(String name, {bool isHidden: false})
+      : super(name, isHidden: isHidden);
 
   bool get value => super.value == 'true';
 
@@ -30,8 +32,8 @@ class BooleanUserOption extends UserOption {
 }
 
 class StringUserOption extends UserOption {
-  const StringUserOption(String name)
-      : super(name);
+  const StringUserOption(String name, {bool isHidden: false})
+      : super(name, isHidden: isHidden);
 
   String get value => super.value == null ? '' : super.value;
 

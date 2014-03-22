@@ -353,13 +353,14 @@ class PendingInputState extends InitialState {
     super.onMutation(mutations, observer);
 
     InteractionState nextState = new InitialState(context);
-
-    Element parent = editor.getElementAtSelection();
-    Element ui;
-    if (parent != null) {
-      ui = parent.querySelector('.dart-code-completion');
-      if (ui != null) {
-        nextState = new CodeCompletionState(context, parent, ui);
+    if (settings.enableCodeCompletion.value) {
+      Element parent = editor.getElementAtSelection();
+      Element ui;
+      if (parent != null) {
+        ui = parent.querySelector('.dart-code-completion');
+        if (ui != null) {
+          nextState = new CodeCompletionState(context, parent, ui);
+        }
       }
     }
     state = nextState;
