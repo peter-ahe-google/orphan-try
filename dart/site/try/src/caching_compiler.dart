@@ -12,6 +12,25 @@ import 'package:compiler/compiler.dart' show
 import 'package:compiler/implementation/apiimpl.dart' show
     Compiler;
 
+abstract class SourceFileProvider {}
+class FormattingDiagnosticHandler {
+  FormattingDiagnosticHandler(a);
+}
+abstract class Platform {
+  static var script;
+  static var packageRoot;
+}
+class MemorySourceFileProvider extends SourceFileProvider {
+  var readStringFromUri;
+  var memorySourceFiles;
+  MemorySourceFileProvider(a);
+}
+class NullSink extends EventSink {
+  NullSink(a);
+}
+var expando;
+abstract class EventSink<T> {}
+
 DiagnosticHandler createDiagnosticHandler(DiagnosticHandler diagnosticHandler,
                                           SourceFileProvider provider,
                                           bool showDiagnostics) {
