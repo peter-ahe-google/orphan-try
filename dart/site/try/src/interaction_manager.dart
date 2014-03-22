@@ -27,7 +27,6 @@ import 'compilation.dart' show
 
 import 'ui.dart' show
     currentTheme,
-    enableDartMind,
     hackDiv,
     inputPre,
     observer,
@@ -44,6 +43,8 @@ import 'decoration.dart' show
 import 'editor.dart' as editor;
 
 import 'mock.dart' as mock;
+
+import 'settings.dart' as settings;
 
 /**
  * UI interaction manager for the entire application.
@@ -563,7 +564,7 @@ class CodeCompletionState extends InitialState {
       staticResults.nodes.add(buildCompletionEntry(completion));
     });
 
-    if (enableDartMind) {
+    if (settings.enableDartMind) {
       String encodedArg0 = Uri.encodeComponent('"$prefix"');
       String mindQuery =
           'http://dart-mind.appspot.com/rpc'

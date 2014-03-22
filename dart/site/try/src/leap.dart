@@ -30,6 +30,9 @@ import 'ui.dart' show
     interaction,
     observer;
 
+import 'user_option.dart' show
+    UserOption;
+
 int count = 0;
 
 const String HAS_NON_DOM_HTTP_REQUEST = 'spawnFunction supports HttpRequest';
@@ -46,6 +49,7 @@ checkHttpRequest(SendPort replyTo) {
 }
 
 main() {
+  UserOption.storage = window.localStorage;
   if (window.localStorage['currentSource'] == null) {
     window.localStorage['currentSource'] = EXAMPLE_HELLO;
   }

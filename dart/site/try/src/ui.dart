@@ -33,6 +33,12 @@ import 'samples.dart' show
     EXAMPLE_HELLO_HTML,
     EXAMPLE_SUNFLOWER;
 
+import 'settings.dart';
+
+import 'user_option.dart';
+
+import 'messages.dart' show messages;
+
 // TODO(ahe): Make internal to buildUI once all interactions have been moved to
 // the manager.
 InteractionManager interaction;
@@ -43,16 +49,7 @@ DivElement hackDiv;
 IFrameElement outputFrame;
 MutationObserver observer;
 SpanElement cacheStatusElement;
-bool alwaysRunInWorker = window.localStorage['alwaysRunInWorker'] == 'true';
-bool verboseCompiler = window.localStorage['verboseCompiler'] == 'true';
-bool minified = window.localStorage['minified'] == 'true';
-bool onlyAnalyze = window.localStorage['onlyAnalyze'] == 'true';
-bool enableDartMind = window.localStorage['enableDartMind'] == 'true';
-bool compilationPaused = window.localStorage['compilationPaused'] == 'true';
-final String rawCodeFont = window.localStorage['codeFont'];
-String codeFont = rawCodeFont == null ? '' : rawCodeFont;
-String currentSample = window.localStorage['currentSample'];
-Theme currentTheme = Theme.named(window.localStorage['theme']);
+Theme currentTheme = Theme.named(theme);
 
 buildButton(message, action) {
   if (message is String) {
@@ -384,7 +381,6 @@ void openSettings(MouseEvent event) {
     compilationPaused = false;
   }
 
-
   var body = document.getElementById('settings-body');
 
   body.nodes.clear();
@@ -394,59 +390,58 @@ void openSettings(MouseEvent event) {
   body.append(form);
   form.append(fieldSet);
 
-  buildCheckBox(String text, bool defaultValue, void action(Event e)) {
-    var checkBox = new CheckboxInputElement()
-        // TODO(ahe): Used to be ..defaultChecked = defaultValue
-        ..checked = defaultValue
-        ..onChange.listen(action);
-    return new LabelElement()
-        ..classes.add('checkbox')
-        ..append(checkBox)
-        ..appendText(' $text');
-  }
-
   bool isChecked(CheckboxInputElement checkBox) => checkBox.checked;
 
-  // TODO(ahe): Build abstraction for flags/options.
-  fieldSet.append(
-      buildCheckBox(
-          'Always run in Worker thread.', alwaysRunInWorker,
-          (Event e) { alwaysRunInWorker = isChecked(e.target); }));
-
-  fieldSet.append(
-      buildCheckBox(
-          'Verbose compiler output.', verboseCompiler,
-          (Event e) { verboseCompiler = isChecked(e.target); }));
-
-  fieldSet.append(
-      buildCheckBox(
-          'Generate compact (minified) JavaScript.', minified,
-          (Event e) { minified = isChecked(e.target); }));
-
-  fieldSet.append(
-      buildCheckBox(
-          'Only analyze program.', onlyAnalyze,
-          (Event e) { onlyAnalyze = isChecked(e.target); }));
-
-  fieldSet.append(
-      buildCheckBox(
-          'Talk to "Dart Mind" server.', enableDartMind,
-          (Event e) { enableDartMind = isChecked(e.target); }));
-
-  fieldSet.append(
-      buildCheckBox(
-          'Pause compilation.', compilationPaused,
-          (Event e) { compilationPaused = isChecked(e.target); }));
-
-  fieldSet.append(new LabelElement()..appendText('Code font:'));
-  var textInput = new TextInputElement();
-  textInput.classes.add('input-block-level');
-  if (codeFont != null && codeFont != '') {
-    textInput.value = codeFont;
+  String messageFor(UserOption option) {
+    var message = messages[option.name];
+    if (message is List) message = message[0];
+    return (message == null) ? option.name : message;
   }
-  textInput.placeholder = 'Enter a size and font, for example, 11pt monospace';
-  textInput.onChange.listen(updateCodeFont);
-  fieldSet.append(textInput);
+
+  String placeHolderFor(UserOption option) {
+    var message = messages[option.name];
+    if (message is! List) return '';
+    message = message[1];
+    return (message == null) ? '' : message;
+  }
+
+  void addBooleanOption(BooleanUserOption option) {
+    CheckboxInputElement checkBox = new CheckboxInputElement()
+        ..checked = option.value
+        ..onChange.listen((Event e) { option.value = isChecked(e.target); });
+
+    LabelElement label = new LabelElement()
+        ..classes.add('checkbox')
+        ..append(checkBox)
+        ..appendText(' ${messageFor(option)}');
+
+    fieldSet.append(label);
+  }
+
+  void addStringOption(StringUserOption option) {
+    fieldSet.append(new LabelElement()..appendText(messageFor(option)));
+    var textInput = new TextInputElement();
+    textInput.classes.add('input-block-level');
+    String value = option.value;
+    if (!value.isEmpty) {
+      textInput.value = value;
+    }
+    textInput.placeholder = placeHolderFor(option);;
+    textInput.onChange.listen(updateCodeFont);
+    fieldSet.append(textInput);
+  }
+
+  for (UserOption option in options) {
+    if (option.name == 'theme') {
+      addThemeOption(option);
+    }
+    if (option is BooleanUserOption) {
+      addBooleanOption(option);
+    } else if (option is StringUserOption) {
+      addStringOption(option);
+    }
+  }
+
 
   fieldSet.append(new LabelElement()..appendText('Theme:'));
   var themeSelector = new SelectElement();

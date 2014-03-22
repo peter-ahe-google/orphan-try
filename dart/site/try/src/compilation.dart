@@ -29,13 +29,15 @@ import 'run.dart' show
     makeOutputFrame;
 
 import 'ui.dart' show
-    alwaysRunInWorker,
     buildButton,
+    outputDiv,
+    outputFrame;
+
+import 'settings.dart' show
+    alwaysRunInWorker,
     compilationPaused,
     minified,
     onlyAnalyze,
-    outputDiv,
-    outputFrame,
     verboseCompiler;
 
 @lazy import 'caching_compiler.dart' as cacheCompiler;
