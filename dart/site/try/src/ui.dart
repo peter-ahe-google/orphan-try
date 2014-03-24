@@ -228,7 +228,8 @@ buildCode(InteractionManager interaction) {
   var htmlGroup = new OptGroupElement()..label = 'HTML';
   var benchmarkGroup = new OptGroupElement()..label = 'Benchmarks';
 
-  new Future(() => HttpRequest.getString('project?list').then((String response) {
+  new Future(() => HttpRequest.getString('project?list').then(
+  (String response) {
     OptionElement none = new OptionElement()
         ..appendText('--')
         ..disabled = true;

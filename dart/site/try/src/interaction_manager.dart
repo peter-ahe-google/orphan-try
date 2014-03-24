@@ -165,14 +165,12 @@ class InitialState extends InteractionState {
   void onMutation(List<MutationRecord> mutations, MutationObserver observer) {
     print('onMutation');
 
-    for (Element element in inputPre.querySelectorAll('a.diagnostic>span')) {
-      element.remove();
-    }
-    for (Element element in inputPre.querySelectorAll('.dart-code-completion')) {
-      element.remove();
-    }
-    for (Element element in inputPre.querySelectorAll('.hazed-suggestion')) {
-      element.remove();
+    for (String query in ['a.diagnostic>span',
+                          '.dart-code-completion',
+                          '.hazed-suggestion']) {
+      for (Element element in inputPre.querySelectorAll(query)) {
+        element.remove();
+      }
     }
 
     // Discard clean-up mutations.
@@ -189,7 +187,8 @@ class InitialState extends InteractionState {
 
             bool hasSelection = false;
             int offset = selection.anchorOffset;
-            if (selection.isCollapsed && selection.anchorNode == record.target) {
+            if (selection.isCollapsed &&
+                selection.anchorNode == record.target) {
               hasSelection = true;
             }
             var parent = record.target.parentNode;
@@ -556,9 +555,10 @@ class CodeCompletionState extends InitialState {
     }
 
     List<String> results = editor.seenIdentifiers.where(
-        (String identifier) => identifier != prefix && identifier.startsWith(prefix))
-        .toList(growable: false)
-        ..sort();
+        (String identifier) {
+          return identifier != prefix && identifier.startsWith(prefix);
+        }).toList(growable: false);
+    results.sort();
     if (results.isEmpty) results = <String>[prefix];
 
     results.forEach((String completion) {
@@ -597,7 +597,8 @@ class CodeCompletionState extends InitialState {
               where.nodes.add(entry);
             }
           }
-          serverResults.appendHtml('<div>${serverWatch.elapsedMilliseconds}ms</div>');
+          serverResults.appendHtml(
+              '<div>${serverWatch.elapsedMilliseconds}ms</div>');
           // Discard mutations.
           observer.takeRecords();
         }).catchError((error, stack) {

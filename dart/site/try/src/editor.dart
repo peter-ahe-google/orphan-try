@@ -67,34 +67,12 @@ Element moveActive(int distance) {
         serverResultCount--;
 
         staticNode.style.maxHeight = '${sr.boundingBox(cr).height}px';
-        // .style.maxHeight =
-    //       "${cr.bottom - sr.top}px";
-
       }
     }
-    // var cr = currentEntry.getBoundingClientRect();
-    // var sr = document.querySelector('.dart-static').getBoundingClientRect();
-    // if (cr.bottom - sr.top > sr.height) {
-    //   if (cr.top - sr.top >= sr.height) {
-    //     var entry = serverResults[0];
-    //     entry.remove();
-    //     currentEntry.parentNode.insertBefore(entry, currentEntry);
-    //     currentEntry = entry;
-    //     serverResultCount--;
-    //   } else {
-    //     window.console.log(cr.bottom - sr.top);
-    //   }
-    //   document.querySelector('.dart-static').style.maxHeight =
-    //       "${cr.bottom - sr.top}px";
-    // } else {
-    //   currentEntry.scrollIntoView(ScrollAlignment.BOTTOM);
-    // }
   } else {
     currentEntry.scrollIntoView(ScrollAlignment.BOTTOM);
   }
   if (serverResultCount == 0) {
-    // document.querySelector('.dart-static').classes.remove('dart-limited-height');
-    // document.querySelector('.dart-static').style.height = '';
     document.querySelector('.dart-server').style.display = 'none';
   }
   if (currentEntry != null) {
