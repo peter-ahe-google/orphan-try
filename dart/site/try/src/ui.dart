@@ -39,6 +39,9 @@ import 'user_option.dart';
 
 import 'messages.dart' show messages;
 
+import 'compilation_unit.dart' show
+    CompilationUnit;
+
 // TODO(ahe): Make internal to buildUI once all interactions have been moved to
 // the manager.
 InteractionManager interaction;
@@ -91,6 +94,8 @@ void onCodeChange(Event event) {
 
 buildUI() {
   interaction = new InteractionManager();
+
+  CompilationUnit.onChanged.listen(interaction.compilationUnitChanged);
 
   window.localStorage['currentSample'] = '$currentSample';
 
