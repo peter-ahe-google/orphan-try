@@ -5,22 +5,13 @@
 library trydart.poi;
 
 import 'dart:async' show
-    Completer,
     Future;
-
-import 'dart:io' as io;
-
-import 'dart:convert' show
-    UTF8;
 
 import 'package:dart2js_incremental/dart2js_incremental.dart' show
     reuseCompiler;
 
 import 'package:dart2js_incremental/library_updater.dart' show
     LibraryUpdater;
-
-import 'package:compiler/implementation/source_file_provider.dart' show
-    FormattingDiagnosticHandler;
 
 import 'package:compiler/compiler.dart' as api;
 
@@ -36,6 +27,7 @@ import 'package:compiler/implementation/elements/visitor.dart' show
 
 import 'package:compiler/implementation/elements/elements.dart' show
     AbstractFieldElement,
+    AstElement,
     ClassElement,
     CompilationUnitElement,
     Element,
@@ -64,7 +56,18 @@ import 'package:compiler/implementation/js/js.dart' show
     js;
 
 import 'package:compiler/implementation/tree/tree.dart' show
+    Identifier,
+    Node,
+    Send,
     Visitor;
+
+import 'package:compiler/implementation/resolution/resolution.dart' show
+    TreeElements;
+
+/// If file is missing, generate using:
+///  ./sdk/bin/dart -Dlist_all_libraries=true sdk/lib/_internal/compiler/samples/jsonify/jsonify.dart site/try/poi/_generated_sdk.dart
+import '_generated_sdk.dart' show
+    SDK_SOURCES;
 
 /// Enabled by the option --enable-dart-mind.  Controls if this program should
 /// be querying Dart Mind.
@@ -114,16 +117,6 @@ PoiTask poiTask;
 
 Compiler cachedCompiler;
 
-/// Iterator for reading lines from [io.stdin].
-class StdinIterator implements Iterator<String> {
-  String current;
-
-  bool moveNext() {
-    current = io.stdin.readLineSync();
-    return true;
-  }
-}
-
 printFormattedTime(message, int us) {
   String m = '$message${" " * 65}'.substring(0, 60);
   String i = '${" " * 10}${(us/1000).toStringAsFixed(3)}';
@@ -145,207 +138,6 @@ printWallClock(message) {
 printVerbose(message) {
   if (!isVerbose) return;
   print(message);
-}
-
-main(List<String> arguments) {
-  poiCount = 0;
-  wallClock.start();
-  List<String> nonOptionArguments = [];
-  for (String argument in arguments) {
-    if (argument.startsWith('-')) {
-      switch (argument) {
-        case '--simulate-mutation':
-          isSimulateMutationEnabled = true;
-          break;
-        case '--enable-dart-mind':
-          isDartMindEnabled = true;
-          break;
-        case '-v':
-        case '--verbose':
-          isVerbose = true;
-          break;
-        case '--compile':
-          isCompiler = true;
-          break;
-        case '--minify':
-          enableMinification = true;
-          break;
-        default:
-          throw 'Unknown option: $argument.';
-      }
-    } else {
-      nonOptionArguments.add(argument);
-    }
-  }
-  if (nonOptionArguments.isEmpty) {
-    stdin = new StdinIterator();
-  } else {
-    stdin = nonOptionArguments.iterator;
-  }
-
-  FormattingDiagnosticHandler handler = new FormattingDiagnosticHandler();
-  handler
-      ..verbose = false
-      ..enableColors = true;
-  api.CompilerInputProvider inputProvider = handler.provider;
-
-  return prompt('Dart file: ').then((String fileName) {
-    if (isSimulateMutationEnabled) {
-      inputProvider = simulateMutation(fileName, inputProvider);
-    }
-    return prompt('Position: ').then((String position) {
-      return parseUserInput(fileName, position, inputProvider, handler);
-    });
-  });
-}
-
-/// Create an input provider that implements the behavior documented at
-/// [simulateMutation].
-api.CompilerInputProvider simulateMutation(
-    String fileName,
-    api.CompilerInputProvider inputProvider) {
-  Uri script = Uri.base.resolveUri(new Uri.file(fileName));
-  int count = poiCount;
-  Future cache;
-  String cachedFileName = script.toFilePath();
-  int counter = ++globalCounter;
-  return (Uri uri) {
-    if (counter != globalCounter) throw 'Using old provider';
-    printVerbose('fake inputProvider#$counter($uri): $poiCount $count');
-    if (uri == script) {
-      if (poiCount == count) {
-        cachedFileName = uri.toFilePath();
-        if (count != 0) {
-          cachedFileName = '$cachedFileName.$count.dart';
-        }
-        printVerbose('Not using cached version of $cachedFileName');
-        cache = new io.File(cachedFileName).readAsBytes().then((data) {
-          printVerbose(
-              'Read file $cachedFileName: '
-              '${UTF8.decode(data.take(100).toList(), allowMalformed: true)}...');
-          return data;
-        });
-        count++;
-      } else {
-        printVerbose('Using cached version of $cachedFileName');
-      }
-      return cache;
-    } else {
-      printVerbose('Using original provider for $uri');
-      return inputProvider(uri);
-    }
-  };
-}
-
-Future<String> prompt(message) {
-  if (stdin is StdinIterator) {
-    io.stdout.write(message);
-  }
-  return io.stdout.flush().then((_) {
-    stdin.moveNext();
-    return stdin.current;
-  });
-}
-
-Future queryDartMind(String prefix, String info) {
-  // TODO(lukechurch): Use [info] for something.
-  String encodedArg0 = Uri.encodeComponent('"$prefix"');
-  String mindQuery =
-      'http://dart-mind.appspot.com/rpc'
-      '?action=GetExportingPubCompletions'
-      '&arg0=$encodedArg0';
-  Uri uri = Uri.parse(mindQuery);
-
-  io.HttpClient client = new io.HttpClient();
-  return client.getUrl(uri).then((io.HttpClientRequest request) {
-    return request.close();
-  }).then((io.HttpClientResponse response) {
-    Completer<String> completer = new Completer<String>();
-    response.transform(UTF8.decoder).listen((contents) {
-      completer.complete(contents);
-    });
-    return completer.future;
-  });
-}
-
-Future parseUserInput(
-    String fileName,
-    String positionString,
-    api.CompilerInputProvider inputProvider,
-    api.DiagnosticHandler handler) {
-  Future repeat() {
-    printFormattedTime('--->>>', wallClock.elapsedMicroseconds);
-    wallClock.reset();
-
-    return prompt('Position: ').then((String positionString) {
-      wallClock.reset();
-      return parseUserInput(fileName, positionString, inputProvider, handler);
-    });
-  }
-
-  printWallClock("\n\n\nparseUserInput('$fileName', '$positionString')");
-
-  Uri script = Uri.base.resolveUri(new Uri.file(fileName));
-  if (positionString == null) return null;
-  int position = int.parse(
-      positionString, onError: (_) { print('Please enter an integer.'); });
-  if (position == null) return repeat();
-
-  inputProvider(script);
-  if (isVerbose) {
-    handler(
-        script, position, position + 1,
-        'Point of interest. '
-        'Cursor is immediately before highlighted character.',
-        api.Diagnostic.HINT);
-  }
-
-  Stopwatch sw = new Stopwatch()..start();
-
-  Future future = runPoi(script, position, inputProvider, handler);
-  return future.then((Element element) {
-    if (isVerbose) {
-      printFormattedTime('Resolving took', sw.elapsedMicroseconds);
-    }
-    sw.reset();
-    String info = scopeInformation(element, position);
-    sw.stop();
-    if (PRINT_SCOPE_INFO) {
-      print(info);
-    }
-    printVerbose('Scope information took ${sw.elapsedMicroseconds}us.');
-    sw..reset()..start();
-    Token token = findToken(element, position);
-    String prefix;
-    if (token != null) {
-      if (token.charOffset + token.charCount < position) {
-        // After the token; in whitespace, or in the beginning of another token.
-        prefix = "";
-      } else if (token.kind == IDENTIFIER_TOKEN ||
-                 token.kind == KEYWORD_TOKEN) {
-        prefix = token.value.substring(0, position - token.charOffset);
-      }
-      findNode(element, token);
-    }
-    sw.stop();
-    printVerbose('Find token took ${sw.elapsedMicroseconds}us.');
-    if (isDartMindEnabled && prefix != null) {
-      sw..reset()..start();
-      return queryDartMind(prefix, info).then((String dartMindSuggestion) {
-        sw.stop();
-        print('Dart Mind ($prefix): $dartMindSuggestion.');
-        printVerbose('Dart Mind took ${sw.elapsedMicroseconds}us.');
-        return repeat();
-      });
-    } else {
-      if (isDartMindEnabled) {
-        print("Didn't talk to Dart Mind, no identifier at POI ($token).");
-      } else if (prefix != null) {
-        print("Prefix at POI: $prefix");
-      }
-      return repeat();
-    }
-  });
 }
 
 /// Find the token corresponding to [position] in [element].  The method only
@@ -380,11 +172,13 @@ Future<Element> runPoi(
     Uri script,
     int position,
     api.CompilerInputProvider inputProvider,
-    api.DiagnosticHandler handler) {
+    api.DiagnosticHandler handler,
+    Uri libraryRoot,
+    Uri packageRoot) {
   Stopwatch sw = new Stopwatch()..start();
-  Uri libraryRoot = Uri.base.resolve('sdk/');
-  Uri packageRoot = Uri.base.resolveUri(
-      new Uri.file('${io.Platform.packageRoot}/'));
+  if (libraryRoot == null) {
+    libraryRoot = Uri.base.resolve('sdk/');
+  }
 
   var options = [
       '--analyze-main',
@@ -797,8 +591,8 @@ class PoiTask extends CompilerTask {
   String get name => 'POI';
 }
 
-findNode(Element element, Token token) {
-  var node = element.node;
+ExpressionInfo findNode(AstElement element, Token token) {
+  Node node = element.node;
   FindNodeVisitor visitor = new FindNodeVisitor(token);
   node.accept(visitor);
 
@@ -815,13 +609,33 @@ findNode(Element element, Token token) {
     }
   }
 
-  print('''
-Found identifier: ${visitor.foundIdentifier}.
-Found send: ${send}.
-Type of send: ${type}.
-Type of receiver: ${receiverType}.
-Parent send: ${visitor.parentSend}.
-''');
+  return new ExpressionInfo(
+      visitor.foundIdentifier,
+      visitor.foundSend,
+      type,
+      receiverType,
+      visitor.parentSend);
+}
+
+class ExpressionInfo {
+  final Identifier identifier;
+
+  final Send send;
+
+  final DartType type;
+
+  final DartType receiverType;
+
+  final Send parent;
+
+  ExpressionInfo(
+      this.identifier, this.send, this.type, this.receiverType, this.parent);
+
+  String toString() {
+    return 'ExpressionInfo('
+        'identifier: $identifier, send: $send, type: $type, '
+        'receiverType: $receiverType, parent: $parent)';
+  }
 }
 
 class FindNodeVisitor extends Visitor {
@@ -858,3 +672,149 @@ class FindNodeVisitor extends Visitor {
     }
   }
 }
+
+Future<Info> analyzeCode(
+    Map<Uri, String> codeMap,
+    Uri uri,
+    int offset) {
+  bool lastDiagnosticWasError = false;
+  List<Message> errors = <Message>[];
+  List<Message> otherMessages = <Message>[];
+
+  void handler(
+      Uri uri,
+      int begin,
+      int end,
+      String text,
+      api.Diagnostic kind) {
+    Message message = new Message(uri, begin, end, text, kind);
+    print(message);
+
+    bool isError =
+        kind == api.Diagnostic.ERROR ||
+        kind == api.Diagnostic.CRASH;
+
+    List<Message> messages;
+
+    if (kind == api.Diagnostic.INFO) {
+      messages = lastDiagnosticWasError ? errors : otherMessages;
+    } else {
+      lastDiagnosticWasError = isError;
+      messages = isError ? errors : otherMessages;
+    }
+
+    messages.add(message);
+  }
+
+  Future<String> inputProvider(Uri uri) {
+    if (uri.scheme == 'sdk') {
+      String source = SDK_SOURCES['$uri'];
+      if (source == null) {
+        return new Future.error("SDK source not found: '${uri.path}'.");
+      } else {
+        return new Future.value(source);
+      }
+    } else {
+      String source = codeMap[uri];
+      if (source == null) {
+        return new Future.error("User source not found: '${uri}'.");
+      } else {
+        return new Future.value(source);
+      }
+    }
+  }
+
+  Info computeInfo(Element element) {
+    String scope = scopeInformation(element, offset);
+    Token token = findToken(element, offset);
+    String prefix;
+    ExpressionInfo expression;
+    if (token != null) {
+      expression = findNode(element, token);
+    }
+
+    return new Info(scope, errors, otherMessages, expression);
+  }
+
+  Uri libraryRoot = Uri.parse('sdk:/sdk/');
+  Uri packageRoot = Uri.base.resolve('packages/');
+
+  return runPoi(uri, offset, inputProvider, handler, libraryRoot, packageRoot)
+      .then(computeInfo);
+}
+
+class Info {
+  /// A JSON string of scope information.
+  final String scope;
+
+  final List<Message> errors;
+
+  final List<Message> otherMessages;
+
+  final ExpressionInfo expression;
+
+  Info(this.scope, this.errors, this.otherMessages, this.expression);
+
+  String toString() {
+    return '''
+Info(
+  scope: $scope,
+  errors: $errors,
+  otherMessages: $otherMessages,
+  expression: $expression)''';
+  }
+}
+
+class Message {
+  Uri uri;
+  int begin;
+  int end;
+  String text;
+  api.Diagnostic kind;
+
+  Message(this.uri, this.begin, this.end, this.text, this.kind);
+
+  Map toJson() {
+    return {
+      'uri': '$uri',
+      'begin': begin,
+      'end': end,
+      'text': text,
+      'kind': kind.name,
+    };
+  }
+
+  String toString() {
+    if (uri == null) {
+      return '[$kind] $text';
+    }
+    return '$uri@$begin+$end: [$kind] $text';
+  }
+}
+
+void main() {
+  Uri uri = Uri.parse('org-trydart-poi:/main.dart');
+  analyzeCode({uri: TEST_CODE}, uri, TEST_OFFSET).then((Info info) {
+    print(info);
+  });
+}
+
+const String TEST_CODE = '''
+class B {
+  int b() => 0;
+}
+
+class C {
+  B c() => new B();
+}
+
+main() {
+  C c = new C();
+  c.c(
+  foo();
+  bar();
+  baz();
+}
+''';
+
+const int TEST_OFFSET = 93;

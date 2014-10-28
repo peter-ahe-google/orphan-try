@@ -15,9 +15,9 @@ SDK_DIR=../../../xcodebuild/ReleaseIA32/dart-sdk
 PACKAGE_ROOT=../../../xcodebuild/ReleaseIA32/packages/
 
 all:
-	@echo $(SDK_DIR)/bin/dartanalyzer -p $(PACKAGE_ROOT) repeat_poi.dart
+	@echo $(SDK_DIR)/bin/dartanalyzer -p $(PACKAGE_ROOT) main.dart
 	@$(SDK_DIR)/bin/dartanalyzer -p $(PACKAGE_ROOT) \
-	--package-warnings --machine ../poi/repeat_poi.dart 2>&1 \
+	--package-warnings --machine ../poi/main.dart 2>&1 \
 	| grep -v DEPRECATED_MEMBER_USE \
 	| grep -v DEAD_CODE \
 	| grep -v -E 'INFO\|HINT\|ARGUMENT_TYPE_NOT_ASSIGNABLE\|' \
