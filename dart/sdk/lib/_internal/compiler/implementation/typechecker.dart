@@ -404,6 +404,7 @@ class TypeCheckerVisitor extends Visitor<DartType> {
     bool previouslyInitializer = analyzingInitializer;
     analyzingInitializer = inInitializer;
     DartType result = node.accept(this);
+    compiler.recordedTypes[node] = result;
     analyzingInitializer = previouslyInitializer;
     if (result == null) {
       compiler.internalError(node, 'Type is null.');

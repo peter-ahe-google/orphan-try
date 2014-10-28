@@ -734,6 +734,11 @@ class Listener {
       throw new SpannableAssertionFailure(token, token.assertionMessage);
     }
   }
+
+  Token expectedCloseParen(Token token) {
+    reportError(token, MessageKind.MISSING_TOKEN_BEFORE_THIS, {'token': ')'});
+    return token;
+  }
 }
 
 String closeBraceFor(String openBrace) {

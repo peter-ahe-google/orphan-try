@@ -1857,7 +1857,8 @@ main() {
       howToFix: DONT_KNOW_HOW_TO_FIX,
       examples: const [
           "main() => true ? 1;",
-          "main() => foo(x: 1 y: 2);",
+          "foo({x,y}){} main() => foo(x: 1 y: 2);",
+          "foo([x]) {} main() { foo( foo(); }",
         ]);
 
   static const MessageKind MISSING_TOKEN_AFTER_THIS = const MessageKind(

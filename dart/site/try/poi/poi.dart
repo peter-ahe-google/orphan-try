@@ -63,6 +63,9 @@ import 'package:compiler/implementation/scanner/scannerlib.dart' show
 import 'package:compiler/implementation/js/js.dart' show
     js;
 
+import 'package:compiler/implementation/tree/tree.dart' show
+    Visitor;
+
 /// Enabled by the option --enable-dart-mind.  Controls if this program should
 /// be querying Dart Mind.
 bool isDartMindEnabled = false;
@@ -315,13 +318,14 @@ Future parseUserInput(
     Token token = findToken(element, position);
     String prefix;
     if (token != null) {
-      if (token.charOffset + token.charCount <= position) {
+      if (token.charOffset + token.charCount < position) {
         // After the token; in whitespace, or in the beginning of another token.
         prefix = "";
       } else if (token.kind == IDENTIFIER_TOKEN ||
                  token.kind == KEYWORD_TOKEN) {
         prefix = token.value.substring(0, position - token.charOffset);
       }
+      findNode(element, token);
     }
     sw.stop();
     printVerbose('Find token took ${sw.elapsedMicroseconds}us.');
@@ -336,6 +340,8 @@ Future parseUserInput(
     } else {
       if (isDartMindEnabled) {
         print("Didn't talk to Dart Mind, no identifier at POI ($token).");
+      } else if (prefix != null) {
+        print("Prefix at POI: $prefix");
       }
       return repeat();
     }
@@ -465,7 +471,7 @@ Future<Element> runPoiInternal(
 
     if (poiCount != null) poiCount++;
     if (success != true) {
-      throw 'Compilation failed';
+      // throw 'Compilation failed';
     }
     return findPosition(position, cachedCompiler.mainApp);
   });
@@ -789,4 +795,66 @@ class PoiTask extends CompilerTask {
   PoiTask(Compiler compiler) : super(compiler);
 
   String get name => 'POI';
+}
+
+findNode(Element element, Token token) {
+  var node = element.node;
+  FindNodeVisitor visitor = new FindNodeVisitor(token);
+  node.accept(visitor);
+
+  Send send = visitor.foundSend;
+  var receiverType;
+  var type;
+  if (send != null) {
+    TreeElements mapping = element.treeElements;
+    type = cachedCompiler.recordedTypes[send];
+    // type = mapping.getType(send);
+    if (send.receiver != null) {
+      receiverType = mapping.getType(send.receiver);
+      receiverType = cachedCompiler.recordedTypes[send.receiver];
+    }
+  }
+
+  print('''
+Found identifier: ${visitor.foundIdentifier}.
+Found send: ${send}.
+Type of send: ${type}.
+Type of receiver: ${receiverType}.
+Parent send: ${visitor.parentSend}.
+''');
+}
+
+class FindNodeVisitor extends Visitor {
+  final Token soughtToken;
+
+  Send currentSend;
+
+  Identifier foundIdentifier;
+  Send foundSend;
+  Send parentSend;
+
+  FindNodeVisitor(this.soughtToken);
+
+  void visitNode(Node node) {
+    if (soughtToken != null) {
+      node.visitChildren(this);
+    }
+  }
+
+  void visitSend(Send node) {
+    Send enclosingSend = currentSend;
+    currentSend = node;
+    super.visitSend(node);
+    currentSend = enclosingSend;
+    if (foundSend == node) {
+      parentSend = currentSend;
+    }
+  }
+
+  void visitIdentifier(Identifier node) {
+    if (node.token == soughtToken) {
+      foundIdentifier = node;
+      foundSend = currentSend;
+    }
+  }
 }

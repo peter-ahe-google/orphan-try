@@ -332,7 +332,7 @@ class Parser {
       token = parseFormalParameter(token, FormalParameterType.REQUIRED);
     } while (optional(',', token));
     listener.endFormalParameters(parameterCount, begin, token);
-    return expect(')', token);
+    return expectCloseParen(token);
   }
 
   Token parseFormalParameter(Token token, FormalParameterType type) {
@@ -1793,7 +1793,7 @@ class Parser {
       token = begin.endGroup;
     }
     listener.handleParenthesizedExpression(begin);
-    return expect(')', token);
+    return expectCloseParen(token);
   }
 
   Token parseThisExpression(Token token) {
@@ -2062,7 +2062,7 @@ class Parser {
     } while (optional(',', token));
     mayParseFunctionExpressions = old;
     listener.endArguments(argumentCount, begin, token);
-    return expect(')', token);
+    return expectCloseParen(token);
   }
 
   Token parseIsOperatorRest(Token token) {
@@ -2200,7 +2200,7 @@ class Parser {
         break;
       }
     }
-    token = expect(')', token);
+    token = expectCloseParen(token);
     token = parseStatement(token);
     listener.endForStatement(expressionCount, forToken, token);
     return token;
@@ -2210,7 +2210,7 @@ class Parser {
     assert(optional('in', token));
     Token inKeyword = token;
     token = parseExpression(token.next);
-    token = expect(')', token);
+    token = expectCloseParen(token);
     token = parseStatement(token);
     listener.endForIn(forToken, inKeyword, token);
     return token;
@@ -2451,5 +2451,13 @@ class Parser {
   Token parseEmptyStatement(Token token) {
     listener.handleEmptyStatement(token);
     return expectSemicolon(token);
+  }
+
+  Token expectCloseParen(Token token) {
+    if (optional(')', token)) {
+      return token.next;
+    } else {
+      return listener.expectedCloseParen(token);
+    }
   }
 }

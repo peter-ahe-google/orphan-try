@@ -2013,6 +2013,8 @@ abstract class Compiler implements DiagnosticListener {
     }
     backend.forgetElement(element);
   }
+
+  var recordedTypes = new Map<Node, DartType>();
 }
 
 class CompilerTask {
