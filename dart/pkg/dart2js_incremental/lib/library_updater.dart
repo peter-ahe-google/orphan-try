@@ -14,6 +14,7 @@ import 'package:compiler/compiler.dart' as api;
 
 import 'package:compiler/implementation/dart2jslib.dart' show
     Compiler,
+    CompilerCancelledException,
     Script;
 
 import 'package:compiler/implementation/elements/elements.dart' show
@@ -134,10 +135,17 @@ class LibraryUpdater {
     Script sourceScript = new Script(
         uri, uri, new StringSourceFile('$uri', newSource));
     var dartPrivacyIsBroken = compiler.libraryLoader;
-    LibraryElement newLibrary = dartPrivacyIsBroken.createLibrarySync(
-        null, sourceScript, uri);
-    logTime('New library synthesized.');
-    return canReuseScopeContainerElement(library, newLibrary);
+    try {
+      LibraryElement newLibrary = dartPrivacyIsBroken.createLibrarySync(
+          null, sourceScript, uri);
+      logTime('New library synthesized.');
+      return canReuseScopeContainerElement(library, newLibrary);
+    } on CompilerCancelledException catch (error) {
+      onlySimpleUpdates = false;
+      print(error);
+      compiler.compilerWasCancelled = true;
+      return false;
+    }
   }
 
   bool canReuseScopeContainerElement(
