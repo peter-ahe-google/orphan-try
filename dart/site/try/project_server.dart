@@ -141,6 +141,7 @@ It is safe to delete tag '$GIT_TAG' if you don't need the backup.""";
 
   notFound(path) {
     response.statusCode = HttpStatus.NOT_FOUND;
+    response.headers.set(CONTENT_TYPE, 'text/html');
     response.write(htmlInfo('Not Found',
                             'The file "$path" could not be found.'));
     response.close();
@@ -148,6 +149,7 @@ It is safe to delete tag '$GIT_TAG' if you don't need the backup.""";
 
   badRequest(String problem) {
     response.statusCode = HttpStatus.BAD_REQUEST;
+    response.headers.set(CONTENT_TYPE, 'text/html');
     response.write(htmlInfo("Bad request",
                             "Bad request '${request.uri}': $problem"));
     response.close();
@@ -157,6 +159,7 @@ It is safe to delete tag '$GIT_TAG' if you don't need the backup.""";
     print(error);
     if (stack != null) print(stack);
     response.statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
+    response.headers.set(CONTENT_TYPE, 'text/html');
     response.write(htmlInfo("Internal Server Error",
                             "Internal Server Error: $error\n$stack"));
     response.close();
@@ -257,6 +260,7 @@ It is safe to delete tag '$GIT_TAG' if you don't need the backup.""";
     }
 
     String filePath = root.resolve('.$path').toFilePath();
+    print(filePath);
     switch (request.method) {
       case 'GET':
         return handleGet(filePath, dartType);
@@ -274,6 +278,8 @@ It is safe to delete tag '$GIT_TAG' if you don't need the backup.""";
       if (!exists) return notFound(request.uri);
       if (path.endsWith('.html')) {
         response.headers.set(CONTENT_TYPE, 'text/html');
+      } else if (path.endsWith('.css')) {
+        response.headers.set(CONTENT_TYPE, 'text/css');
       } else if (path.endsWith('.dart')) {
         response.headers.set(CONTENT_TYPE, dartType);
       } else if (path.endsWith('.js')) {
@@ -427,6 +433,10 @@ It is safe to delete tag '$GIT_TAG' if you don't need the backup.""";
   }
 }
 
+/// Usage: 
+///   project_server.dart <document_root> <host> <port> \
+///       <project_root> <package_root>
+///
 main(List<String> arguments) {
   if (arguments.length > 0) {
     Conversation.documentRoot = Uri.base.resolve(arguments[0]);
