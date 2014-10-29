@@ -242,10 +242,14 @@ Future<Element> runPoiInternal(
 
   if (updater.hasPendingUpdates) {
     compilation = new Future(() {
-      var node = js.statement(
-          r'var $dart_patch = #', js.escapedString(updater.computeUpdateJs()));
-      print(updater.prettyPrintJs(node));
-
+      if (isCompiler) {
+        var node = js.statement(
+            r'var $dart_patch = #',
+            js.escapedString(updater.computeUpdateJs()));
+        print(updater.prettyPrintJs(node));
+      } else {
+        updater.analyzeUpdates();
+      }
       return !cachedCompiler.compilationFailed;
     });
   } else {
@@ -794,12 +798,32 @@ class Message {
 
 void main() {
   Uri uri = Uri.parse('org-trydart-poi:/main.dart');
-  analyzeCode({uri: TEST_CODE}, uri, TEST_OFFSET).then((Info info) {
-    print(info);
+  Future.forEach([GOOD_TEST_CODE, BROKEN_TEST_CODE], (String code) {
+    return analyzeCode({uri: code}, uri, TEST_OFFSET).then((Info info) {
+      print(info);
+    });
   });
 }
 
-const String TEST_CODE = '''
+const String GOOD_TEST_CODE = '''
+class B {
+  int b() => 0;
+}
+
+class C {
+  B c() => new B();
+}
+
+main() {
+  C c = new C();
+  c.c();
+  foo();
+  bar();
+  baz();
+}
+''';
+
+const String BROKEN_TEST_CODE = '''
 class B {
   int b() => 0;
 }

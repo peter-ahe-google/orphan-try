@@ -266,7 +266,7 @@ class LibraryUpdater {
     return updates.map((Update update) => update.apply()).toList();
   }
 
-  String computeUpdateJs() {
+  List<Element> analyzeUpdates() {
     List<Element> updatedElements = applyUpdates();
     if (compiler.progress != null) {
       compiler.progress.reset();
@@ -277,6 +277,12 @@ class LibraryUpdater {
     compiler.processQueue(compiler.enqueuer.resolution, null);
 
     compiler.phase = Compiler.PHASE_DONE_RESOLVING;
+
+    return updatedElements;
+  }
+
+  String computeUpdateJs() {
+    List<Element> updatedElements = analyzeUpdates();
 
     for (Element element in updatedElements) {
       compiler.enqueuer.codegen.addToWorkList(element);
