@@ -1415,6 +1415,11 @@ import 'foo.dart';
 main() {}
 """]);
 
+  static const MessageKind READ_SELF_ERROR = const MessageKind(
+      "#{exception}",
+      // Don't know how to fix since the underlying error is unknown.
+      howToFix: DONT_KNOW_HOW_TO_FIX);
+
   static const MessageKind EXTRANEOUS_MODIFIER = const MessageKind(
       "Can't have modifier '#{modifier}' here.",
       howToFix: "Try removing '#{modifier}'.",

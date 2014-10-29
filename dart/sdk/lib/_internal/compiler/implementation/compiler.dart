@@ -926,6 +926,8 @@ abstract class Compiler implements DiagnosticListener {
 
   bool compilationFailed = false;
 
+  bool hasReadError = true;
+
   bool hasCrashed = false;
 
   /// Set by the backend if real reflection is detected in use of dart:mirrors.
@@ -1288,9 +1290,14 @@ abstract class Compiler implements DiagnosticListener {
     stackTraceClass = lookupCoreClass('StackTrace');
     symbolClass = lookupCoreClass('Symbol');
     if (!missingCoreClasses.isEmpty) {
-      internalError(coreLibrary,
+      String message =
           'dart:core library does not contain required classes: '
-          '$missingCoreClasses');
+          '$missingCoreClasses';
+      if (hasReadError) {
+        throw new CompilerCancelledException(message);
+      } else {
+        internalError(coreLibrary, message);
+      }
     }
   }
 
@@ -1347,11 +1354,7 @@ abstract class Compiler implements DiagnosticListener {
         });
       }
     }).then((_) {
-      if (!compilationFailed) {
-        // TODO(johnniwinther): Reenable analysis of programs with load failures
-        // when these are handled as erroneous libraries/compilation units.
-        compileLoadedLibraries();
-      }
+      compileLoadedLibraries();
     });
   }
 
