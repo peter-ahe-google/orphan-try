@@ -1907,6 +1907,16 @@ main() => new A();
           'main() { print(for); }',
       ]);
 
+  static const MessageKind SKIPPED_THIS_PART = const MessageKind(
+      "Skipped this part due to syntax error.");
+
+  static const MessageKind CANNOT_PARSE_TOP_LEVEL = const MessageKind(
+      "Expected declaration, but encountered a syntax error.",
+      howToFix: DONT_KNOW_HOW_TO_FIX,
+      examples: const [
+          'main) {}',
+      ]);
+
   static const MessageKind COMPILER_CRASHED = const MessageKind(
       "The compiler crashed when compiling this element.");
 

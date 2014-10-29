@@ -700,8 +700,7 @@ class Parser {
         }
         break;
       } else {
-        token = listener.unexpected(token);
-        if (identical(token.kind, EOF_TOKEN)) return token;
+        return listener.cannotParseTopLevelMember(token, start);
       }
     }
     var modifiers = identifiers.reverse();
@@ -874,7 +873,12 @@ class Parser {
     Link<Token> identifiers = const Link<Token>();
     while (!identical(token.kind, EOF_TOKEN)) {
       String value = token.stringValue;
-      if ((identical(value, '(')) || (identical(value, '{'))
+      if (identical(value, ')') ||
+          identical(value, '}') ||
+          identical(value, ']')) {
+        // Something weird.
+        return identifiers;
+      } else if ((identical(value, '(')) || (identical(value, '{'))
           || (identical(value, '=>'))) {
         // A method.
         return identifiers;

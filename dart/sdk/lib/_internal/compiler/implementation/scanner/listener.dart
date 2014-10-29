@@ -598,6 +598,18 @@ class Listener {
     return skipToEof(token);
   }
 
+  Token cannotParseTopLevelMember(Token problemToken, Token start) {
+    reportError(start, MessageKind.CANNOT_PARSE_TOP_LEVEL);
+    if (problemToken is ErrorToken) {
+      reportErrorToken(problemToken);
+    }
+    Token eof = skipToEof(problemToken);
+    Node ignoredRange =
+        new NodeList(problemToken, const Link<Node>(), eof, " ");
+    listener.reportInfo(ignoredRange, MessageKind.SKIPPED_THIS_PART);
+    return eof;
+  }
+
   Token expectedBlockToSkip(Token token) {
     if (token is ErrorToken) {
       reportErrorToken(token);
