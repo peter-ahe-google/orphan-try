@@ -272,7 +272,9 @@ class LibraryUpdater {
       compiler.progress.reset();
     }
     for (Element element in updatedElements) {
-      compiler.enqueuer.resolution.addToWorkList(element);
+      if (!element.hasParseError) {
+        compiler.enqueuer.resolution.addToWorkList(element);
+      }
     }
     compiler.processQueue(compiler.enqueuer.resolution, null);
 

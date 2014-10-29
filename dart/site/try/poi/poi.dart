@@ -798,14 +798,21 @@ class Message {
 
 void main() {
   Uri uri = Uri.parse('org-trydart-poi:/main.dart');
-  Future.forEach([GOOD_TEST_CODE, BROKEN_TEST_CODE], (String code) {
-    return analyzeCode({uri: code}, uri, TEST_OFFSET).then((Info info) {
-      print(info);
+  Future.forEach([TEST1, TEST2], (List codes) {
+    cachedCompiler = null;
+    return Future.forEach(codes, (String code) {
+      return analyzeCode({uri: code}, uri, TEST_OFFSET).then((Info info) {
+        print(info);
+      });
     });
   });
 }
 
-const String GOOD_TEST_CODE = '''
+const TEST1 = const [GOOD_TEST_CODE1, BROKEN_TEST_CODE1];
+
+const TEST2 = const [GOOD_TEST_CODE2, BROKEN_TEST_CODE2, GOOD_TEST_CODE2];
+
+const String GOOD_TEST_CODE1 = '''
 class B {
   int b() => 0;
 }
@@ -823,7 +830,9 @@ main() {
 }
 ''';
 
-const String BROKEN_TEST_CODE = '''
+const String BROKEN_TEST_CODE1 = '''
+import 'dart:math' show Random;
+
 class B {
   int b() => 0;
 }
@@ -838,6 +847,34 @@ main() {
   foo();
   bar();
   baz();
+}
+''';
+
+const String GOOD_TEST_CODE2 = r'''
+import 'dart:math' show Random;
+
+void main() {
+  String str = "";
+  Random rand = new Random();
+
+  for (int i=0; i < 2; i++) {
+      str = str + "${rand.nextInt(10)},";
+     print (str);
+  }
+}
+''';
+
+const String BROKEN_TEST_CODE2 = r'''
+import 'dart:math' show Random;
+
+void main() {
+  String str = "";
+  Random rand = new Random();
+
+  for (int i=0; i < ; i++) {
+      str = str + "${rand.nextInt(10)},";
+     print (str);
+  }
 }
 ''';
 
