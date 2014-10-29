@@ -787,6 +787,8 @@ class ElementListener extends Listener {
 
   bool suppressParseErrors = false;
 
+  Token lastErrorToken = null;
+
   ElementListener(DiagnosticListener listener,
                   this.compilationUnitElement,
                   this.idGenerator)
@@ -1208,10 +1210,15 @@ class ElementListener extends Listener {
       pushNode(new ErrorExpression(token));
       return token.next;
     } else {
-      reportFatalError(token,
-                       "Expected an expression, but got '${token.value}'.");
-      pushNode(null);
-      return skipToEof(token);
+      pushNode(new ErrorExpression(token));
+      reportError(
+          token, MessageKind.EXPRESSION_EXPECTED, {'token': token.stringValue});
+      if (token == lastErrorToken) {
+        throw new SpannableAssertionFailure(
+            token, 'Parser not making progress.');
+      }
+      lastErrorToken = token;
+      return token;
     }
   }
 

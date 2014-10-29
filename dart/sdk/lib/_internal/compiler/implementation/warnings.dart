@@ -1899,6 +1899,14 @@ main() => new A();
       howToFix: DONT_KNOW_HOW_TO_FIX, /* Don't state the obvious. */
       examples: const ['main(a, b, c) {}']);
 
+  static const MessageKind EXPRESSION_EXPECTED = const MessageKind(
+      "Expected an expression, but found a '#{token}'.",
+      howToFix: DONT_KNOW_HOW_TO_FIX,
+      examples: const [
+          'main() { for (int i = 0; i < ; i++) { } }',
+          'main() { print(for); }',
+      ]);
+
   static const MessageKind COMPILER_CRASHED = const MessageKind(
       "The compiler crashed when compiling this element.");
 
