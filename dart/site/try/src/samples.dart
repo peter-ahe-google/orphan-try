@@ -72,6 +72,23 @@ void main() {
 }
 ''';
 
+const String EXAMPLE_SIEVE = r'''
+main() {
+  print(primesLessThan(150));
+}
+
+/// Computes primes less than [n] using the Sieve of Eratosthenes.
+/// See: [http://en.wikipedia.org/wiki/Sieve_of_Eratosthenes].
+Iterable<int> primesLessThan(n) {
+  List<int> a = new List<int>.generate(n, (i) => i);
+  for (int i = 2; i * i < n; i++)
+    if (a[i] != null)
+      for (int j = i * i; j < n; j += i)
+        a[j] = null;
+  return a.skip(2).where((i) => i != null);
+}
+''';
+
 // Test that math.png is displayed correctly (centered without 3d border).
 // Test that slider works and changes size of sunflower.
 const String EXAMPLE_SUNFLOWER = '''

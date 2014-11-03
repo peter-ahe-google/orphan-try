@@ -693,6 +693,7 @@ Future<Info> analyzeCode(
       api.Diagnostic kind) {
     Message message = new Message(uri, begin, end, text, kind);
     print(message);
+    if (kind == api.Diagnostic.VERBOSE_INFO) return;
 
     bool isError =
         kind == api.Diagnostic.ERROR ||
@@ -797,8 +798,9 @@ class Message {
 }
 
 void main() {
+  isVerbose = true;
   Uri uri = Uri.parse('org-trydart-poi:/main.dart');
-  Future.forEach([TEST1, TEST2, TEST3], (List codes) {
+  Future.forEach([TEST1, TEST2, TEST3, TEST4], (List codes) {
     cachedCompiler = null;
     return Future.forEach(codes, (String code) {
       return analyzeCode({uri: code}, uri, TEST_OFFSET).then((Info info) {
@@ -813,6 +815,8 @@ const TEST1 = const [GOOD_TEST_CODE1, BROKEN_TEST_CODE1];
 const TEST2 = const [GOOD_TEST_CODE2, BROKEN_TEST_CODE2, GOOD_TEST_CODE2];
 
 const TEST3 = const [GOOD_TEST_CODE2, BROKEN_TEST_CODE3, GOOD_TEST_CODE2];
+
+const TEST4 = const [GOOD_TEST_CODE4, BROKEN_TEST_CODE4, BROKEN_TEST_CODE4A];
 
 const String GOOD_TEST_CODE1 = '''
 class B {
@@ -891,6 +895,51 @@ void main) {
       str = str + "${rand.nextInt(10)},";
      print (str);
   }
+}
+''';
+
+const GOOD_TEST_CODE4 = r'''
+import 'dart:math' show Random;
+
+void main() {
+String str = "";
+Random rand = new Random();
+
+for (int i=0; i < 6; i++) {
+str = str + "${rand.nextInt(10)},";
+}
+print (str);
+}
+''';
+
+const BROKEN_TEST_CODE4 = r'''
+import 'dart:math' show Random;
+
+void main() {
+String str = "";
+Random rand = new Random();
+
+for (x)
+for (int i=0; i < 6; i++) {
+str = str + "${rand.nextInt(10)},";
+}
+print (str);
+}
+''';
+
+
+const BROKEN_TEST_CODE4A = r'''
+import 'dart:math' show Random;
+
+void main() {
+String str = "";
+Random rand = new Random();
+
+for (x )
+for (int i=0; i < 6; i++) {
+str = str + "${rand.nextInt(10)},";
+}
+print (str);
 }
 ''';
 

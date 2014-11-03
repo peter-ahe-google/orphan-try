@@ -29,6 +29,7 @@ import 'samples.dart' show
     EXAMPLE_FIBONACCI_HTML,
     EXAMPLE_HELLO,
     EXAMPLE_HELLO_HTML,
+    EXAMPLE_SIEVE,
     EXAMPLE_SUNFLOWER;
 
 import 'settings.dart';
@@ -258,6 +259,11 @@ buildCode(InteractionManager interaction) {
       mainEditorPane
           ..nodes.clear()
           ..appendText(EXAMPLE_FIBONACCI);
+    }));
+    codePicker.append(buildTab('Sieve of Eratosthenes', 'EXAMPLE_SIEVE', (_) {
+      mainEditorPane
+          ..nodes.clear()
+          ..appendText(EXAMPLE_SIEVE);
     }));
     codePicker.append(htmlGroup);
     // TODO(ahe): Restore benchmarks.

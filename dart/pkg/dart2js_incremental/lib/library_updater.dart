@@ -282,6 +282,8 @@ class LibraryUpdater {
     for (Element element in updatedElements) {
       if (!element.hasParseError) {
         compiler.enqueuer.resolution.addToWorkList(element);
+      } else {
+        print('Not resolving $element');
       }
     }
     compiler.processQueue(compiler.enqueuer.resolution, null);

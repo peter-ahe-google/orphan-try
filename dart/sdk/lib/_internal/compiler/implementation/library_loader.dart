@@ -559,7 +559,6 @@ class _LibraryLoaderTask extends CompilerTask implements LibraryLoaderTask {
     }
     return compiler.withCurrentElement(importingLibrary, () {
       return compiler.readScript(node, readableUri).then((Script script) {
-        if (script == null) return null;
         LibraryElement element =
             createLibrarySync(handler, script, resolvedUri);
         return processLibraryTags(handler, element).then((_) {
@@ -743,6 +742,9 @@ class LibraryDependencyNode {
    */
   void registerImportDependency(Import import,
                                 LibraryElement importedLibrary) {
+    if (importedLibrary == null) {
+      throw 'borken';
+    }
     imports = imports.prepend(new ImportLink(import, importedLibrary));
   }
 
